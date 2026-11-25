@@ -1,0 +1,92 @@
+<%- include('partials/header') %>
+
+<div class="auth-wrapper">
+  <div class="card">
+    <div class="auth-header">
+      <h1>Create Your Account</h1>
+      <p>Join TrailMate HK to post new routes and RSVP for hikes.</p>
+    </div>
+
+    <% if (error) { %>
+      <div class="flash flash-danger" style="margin-bottom:16px;">
+        <span><%= error %></span>
+      </div>
+    <% } %>
+
+    <form action="/register" method="POST">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input
+          type="text"
+          id="username"
+          name="username"
+          class="form-control"
+          value="<%= form.username || '' %>"
+          placeholder="e.g. hk_explorer"
+          minlength="3"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="displayName">Display Name</label>
+        <input
+          type="text"
+          id="displayName"
+          name="displayName"
+          class="form-control"
+          value="<%= form.displayName || '' %>"
+          placeholder="e.g. Chris Wong"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          class="form-control"
+          value="<%= form.email || '' %>"
+          placeholder="name@example.com"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input
+          type="password"
+          id="password"
+          name="password"
+          class="form-control"
+          placeholder="At least 6 characters"
+          minlength="6"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="confirmPassword">Confirm Password</label>
+        <input
+          type="password"
+          id="confirmPassword"
+          name="confirmPassword"
+          class="form-control"
+          placeholder="Re-enter your password"
+          minlength="6"
+          required
+        >
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;">Create Account</button>
+    </form>
+
+    <p style="text-align:center; margin-top:18px; font-size:0.9rem; color:var(--text-muted);">
+      Already registered? <a href="/login"><strong>Sign in here</strong></a>
+    </p>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

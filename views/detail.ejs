@@ -1,0 +1,111 @@
+<%- include('partials/header') %>
+
+<%
+  const diffClass = 'badge-' + trail.difficulty.toLowerCase();
+  const statusClass =
+    trail.trailStatus === 'Open'
+      ? 'badge-status-open'
+      : trail.trailStatus === 'Maintenance'
+      ? 'badge-status-maintenance'
+      : 'badge-status-caution';
+  const joined = trail.participants && trail.participants.includes(currentUser.username);
+%>
+
+<div class="page-header">
+  <div>
+    <div class="trail-badges" style="margin-bottom:8px;">
+      <span class="badge <%= diffClass %>"><%= trail.difficulty %></span>
+      <span class="badge <%= statusClass %>"><%= trail.trailStatus %></span>
+      <span class="badge" style="background:var(--surface-alt); color:var(--text);"><%= trail.district %></span>
+    </div>
+    <h1><%= trail.trailName %></h1>
+    <p>Created by <strong><%= trail.createdBy %></strong> &middot; Trail ID: <code><%= trail._id %></code></p>
+  </div>
+  <div class="card-btn-group">
+    <a href="/trails" class="btn btn-secondary">&larr; All Trails</a>
+    <a href="/trails/<%= trail._id %>/edit" class="btn btn-primary">Edit Trail</a>
+    <form
+      action="/trails/<%= trail._id %>/delete"
+      method="POST"
+      style="display:inline;"
+      data-confirm="Permanently delete '<%= trail.trailName %>'?"
+    >
+      <button type="submit" class="btn btn-danger">Delete</button>
+    </form>
+  </div>
+</div>
+
+<div class="detail-grid">
+  <div class="card">
+    <div class="trail-metrics" style="margin-bottom:22px;">
+      <div>
+        <div class="metric-val" style="font-size:1.25rem;"><%= trail.distanceKm %> km</div>
+        <div class="metric-lbl">Distance</div>
+      </div>
+      <div>
+        <div class="metric-val" style="font-size:1.25rem;"><%= trail.durationHrs %> hrs</div>
+        <div class="metric-lbl">Estimated Time</div>
+      </div>
+      <div>
+        <div class="metric-val" style="font-size:1.25rem;"><%= trail.elevationM %> m</div>
+        <div class="metric-lbl">Elevation Gain</div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <h3>Route Overview</h3>
+      <p><%= trail.description %></p>
+    </div>
+
+    <div class="detail-section">
+      <h3>Safety &amp; Preparation Notes</h3>
+      <p><%= trail.safetyNotes || 'Standard hiking precautions apply.' %></p>
+    </div>
+
+    <div class="detail-section" style="margin-bottom:0;">
+      <h3>Recommended Gear Checklist</h3>
+      <% if (trail.gearChecklist && trail.gearChecklist.length > 0) { %>
+        <div class="chip-list">
+          <% trail.gearChecklist.forEach((item) => { %>
+            <span class="chip"><%= item %></span>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p style="color:var(--text-muted);">No specific gear items listed.</p>
+      <% } %>
+    </div>
+  </div>
+
+  <aside class="card" style="height:fit-content;">
+    <div class="detail-section">
+      <h3>Group Meetup Details</h3>
+      <p style="margin-bottom:8px;"><strong>Date:</strong> <%= trail.meetupDate || 'Flexible / Self-Guided' %></p>
+      <p style="margin-bottom:8px;"><strong>Meeting Point:</strong> <%= trail.meetingPoint %></p>
+      <p style="margin-bottom:14px;">
+        <strong>Capacity:</strong>
+        <%= trail.participants ? trail.participants.length : 0 %> / <%= trail.maxParticipants %> hikers
+      </p>
+
+      <form action="/trails/<%= trail._id %>/join" method="POST">
+        <button type="submit" class="btn <%= joined ? 'btn-secondary' : 'btn-accent' %>" style="width:100%;">
+          <%= joined ? 'Leave This Group Hike' : 'Join This Group Hike' %>
+        </button>
+      </form>
+    </div>
+
+    <div class="detail-section" style="margin-bottom:0;">
+      <h3>Registered Hikers</h3>
+      <% if (trail.participants && trail.participants.length > 0) { %>
+        <div class="chip-list">
+          <% trail.participants.forEach((member) => { %>
+            <span class="chip">@<%= member %></span>
+          <% }) %>
+        </div>
+      <% } else { %>
+        <p style="color:var(--text-muted); font-size:0.9rem;">Be the first to join this hike!</p>
+      <% } %>
+    </div>
+  </aside>
+</div>
+
+<%- include('partials/footer') %>

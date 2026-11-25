@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle || 'TrailMate HK' %></title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="navbar">
+    <div class="container navbar-inner">
+      <a href="<%= currentUser ? '/trails' : '/login' %>" class="brand">
+        <span>TrailMate HK</span>
+        <span class="brand-badge">COMP 3810SEF</span>
+      </a>
+      <nav class="nav-links">
+        <% if (currentUser) { %>
+          <a href="/trails" class="nav-link">Explore Trails</a>
+          <a href="/trails/new" class="nav-link">+ Add Trail</a>
+          <a href="/api/trails" class="nav-link" target="_blank">REST API</a>
+          <div class="nav-user">
+            <span>Hi, <strong><%= currentUser.displayName %></strong></span>
+            <form action="/logout" method="POST" style="display:inline;">
+              <button type="submit" class="btn btn-outline-light">Log Out</button>
+            </form>
+          </div>
+        <% } else { %>
+          <a href="/login" class="nav-link">Sign In</a>
+          <a href="/register" class="nav-link">Register</a>
+          <a href="/api/trails" class="nav-link" target="_blank">REST API</a>
+        <% } %>
+      </nav>
+    </div>
+  </header>
+
+  <main class="container">
+    <% if (flash) { %>
+      <div class="flash flash-<%= flash.type %>">
+        <span><%= flash.message %></span>
+        <button type="button" class="flash-close" aria-label="Close">&times;</button>
+      </div>
+    <% } %>

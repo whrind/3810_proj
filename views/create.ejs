@@ -1,0 +1,192 @@
+<%- include('partials/header') %>
+
+<div class="page-header">
+  <div>
+    <h1>Create New Hiking Trail</h1>
+    <p>Add a Hong Kong trail route and schedule an optional group meetup.</p>
+  </div>
+  <a href="/trails" class="btn btn-secondary">&larr; Back to Trails</a>
+</div>
+
+<div class="card">
+  <% if (error) { %>
+    <div class="flash flash-danger" style="margin-bottom:18px;">
+      <span><%= error %></span>
+    </div>
+  <% } %>
+
+  <form action="/trails" method="POST">
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="trailName">Trail Name *</label>
+        <input
+          type="text"
+          id="trailName"
+          name="trailName"
+          class="form-control"
+          value="<%= form.trailName || '' %>"
+          placeholder="e.g. Sharp Peak (Nam She Tsim)"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="district">District *</label>
+        <select id="district" name="district" class="form-control" required>
+          <option value="">-- Select District --</option>
+          <% districts.forEach((d) => { %>
+            <option value="<%= d %>" <%= form.district === d ? 'selected' : '' %>><%= d %></option>
+          <% }) %>
+        </select>
+      </div>
+    </div>
+
+    <div class="form-grid-3">
+      <div class="form-group">
+        <label for="difficulty">Difficulty *</label>
+        <select id="difficulty" name="difficulty" class="form-control" required>
+          <% difficulties.forEach((lvl) => { %>
+            <option value="<%= lvl %>" <%= (form.difficulty || 'Moderate') === lvl ? 'selected' : '' %>><%= lvl %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="trailStatus">Trail Status</label>
+        <select id="trailStatus" name="trailStatus" class="form-control">
+          <% statuses.forEach((st) => { %>
+            <option value="<%= st %>" <%= (form.trailStatus || 'Open') === st ? 'selected' : '' %>><%= st %></option>
+          <% }) %>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="meetupDate">Meetup Date</label>
+        <input
+          type="date"
+          id="meetupDate"
+          name="meetupDate"
+          class="form-control"
+          value="<%= form.meetupDate || '' %>"
+        >
+      </div>
+    </div>
+
+    <div class="form-grid-3">
+      <div class="form-group">
+        <label for="distanceKm">Distance (km) *</label>
+        <input
+          type="number"
+          step="0.1"
+          min="0.5"
+          max="150"
+          id="distanceKm"
+          name="distanceKm"
+          class="form-control"
+          value="<%= form.distanceKm || '' %>"
+          placeholder="e.g. 8.5"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="durationHrs">Duration (hours) *</label>
+        <input
+          type="number"
+          step="0.5"
+          min="0.5"
+          max="48"
+          id="durationHrs"
+          name="durationHrs"
+          class="form-control"
+          value="<%= form.durationHrs || '' %>"
+          placeholder="e.g. 3.5"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="elevationM">Elevation Gain (m)</label>
+        <input
+          type="number"
+          min="0"
+          id="elevationM"
+          name="elevationM"
+          class="form-control"
+          value="<%= form.elevationM || 0 %>"
+          placeholder="e.g. 468"
+        >
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-group">
+        <label for="meetingPoint">Meeting Point *</label>
+        <input
+          type="text"
+          id="meetingPoint"
+          name="meetingPoint"
+          class="form-control"
+          value="<%= form.meetingPoint || '' %>"
+          placeholder="e.g. Sai Kung Bus Terminus"
+          required
+        >
+      </div>
+
+      <div class="form-group">
+        <label for="maxParticipants">Max Participants</label>
+        <input
+          type="number"
+          min="1"
+          max="100"
+          id="maxParticipants"
+          name="maxParticipants"
+          class="form-control"
+          value="<%= form.maxParticipants || 12 %>"
+        >
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label for="gearChecklist">Recommended Gear (comma-separated)</label>
+      <input
+        type="text"
+        id="gearChecklist"
+        name="gearChecklist"
+        class="form-control"
+        value="<%= form.gearChecklist || '' %>"
+        placeholder="e.g. 2L Water, Hiking Poles, Headlamp, Sunscreen"
+      >
+      <div class="form-hint">Separate each item with a comma.</div>
+    </div>
+
+    <div class="form-group">
+      <label for="description">Trail Description *</label>
+      <textarea
+        id="description"
+        name="description"
+        class="form-control"
+        placeholder="Describe scenery, trail surface, highlights, and exit transport..."
+        required
+      ><%= form.description || '' %></textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="safetyNotes">Safety Notes</label>
+      <textarea
+        id="safetyNotes"
+        name="safetyNotes"
+        class="form-control"
+        style="min-height:70px;"
+        placeholder="Weather precautions, steep sections, water supply points..."
+      ><%= form.safetyNotes || 'Bring at least 1.5L of water and check HKO weather warnings before departure.' %></textarea>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Create Trail</button>
+      <a href="/trails" class="btn btn-secondary">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<%- include('partials/footer') %>
