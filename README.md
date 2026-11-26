@@ -10,12 +10,12 @@
 
 | Member | Name | SID | Role |
 | :--- | :--- | :--- | :--- |
-| Member 1 | `[Member 1 Name]` | `[SID 1]` | Express server entry (`server.js`), routing setup, deployment & zip packaging |
-| Member 2 | `[Member 2 Name]` | `[SID 2]` | Mongoose schemas (`models/User.js`, `Trail.js`, `ForumPost.js`) & seed data (`config/seed.js`) |
-| Member 3 | `[Member 3 Name]` | `[SID 3]` | Authentication & authorization (`routes/auth.js`, `middleware/auth.js`, session security) |
-| Member 4 | `[Member 4 Name]` | `[SID 4]` | Trail CRUD & Hiking Forum views (`routes/trails.js`, `routes/forum.js`, `views/`) |
-| Member 5 | `[Member 5 Name]` | `[SID 5]` | UI styling, dark/light theme, trail photos & EN/繁/简 translations (`public/`) |
-| Member 6 | `[Member 6 Name]` | `[SID 6]` | RESTful API (`routes/api.js`), input whitelisting, `curl` testing & documentation |
+| Member 1 | `[Chan Hiu Chun]` | `[14238060]` | Express server entry (`server.js`), routing setup, deployment & zip packaging |
+| Member 2 | `[Chan Wai Nok]` | `[14063175]` | Mongoose schemas (`models/User.js`, `Trail.js`, `ForumPost.js`) & seed data (`config/seed.js`) |
+| Member 3 | `[To Lok Yin]` | `[14218233]` | Authentication & authorization (`routes/auth.js`, `middleware/auth.js`, session security) |
+| Member 4 | `[Lam Ka Ho]` | `[14096514` | Trail CRUD & Hiking Forum views (`routes/trails.js`, `routes/forum.js`, `views/`) |
+| Member 5 | `[Tam Chi Tin]` | `[14019682]` | UI styling, dark/light theme, trail photos & EN/繁/简 translations (`public/`) |
+| Member 6 | `[Fok Ho Fai]` | `[13187776]` | RESTful API (`routes/api.js`), input whitelisting, `curl` testing & documentation |
 
 ## 3. Project Files
 - `server.js`: Main Express app entry point, session setup, view locals, and route mounting.
