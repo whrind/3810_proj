@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Dark / Light Theme Toggle
   const root = document.documentElement;
   const themeBtn = document.getElementById('themeToggleBtn');
 
@@ -12,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     themeBtn.setAttribute('title', theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
   }
 
-  const savedTheme = localStorage.getItem('trailmate_theme_v2') || 'light';
+  const savedTheme = localStorage.getItem('trailmate_theme') || 'light';
   root.setAttribute('data-theme', savedTheme);
   updateThemeIcon(savedTheme);
 
@@ -20,12 +19,11 @@ document.addEventListener('DOMContentLoaded', () => {
     themeBtn.addEventListener('click', () => {
       const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
       root.setAttribute('data-theme', next);
-      localStorage.setItem('trailmate_theme_v2', next);
+      localStorage.setItem('trailmate_theme', next);
       updateThemeIcon(next);
     });
   }
 
-  // 2. Trilingual Translation Engine (EN / zh-HK / zh-CN)
   const langSelect = document.getElementById('langSelect');
   const dict = window.TRAILMATE_I18N || {};
 
@@ -33,15 +31,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const pack = dict[lang] || dict.en || {};
     document.querySelectorAll('[data-i18n]').forEach((el) => {
       const key = el.getAttribute('data-i18n');
-      if (pack[key]) {
-        el.textContent = pack[key];
-      }
+      if (pack[key]) el.textContent = pack[key];
     });
     document.querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
       const key = el.getAttribute('data-i18n-placeholder');
-      if (pack[key]) {
-        el.setAttribute('placeholder', pack[key]);
-      }
+      if (pack[key]) el.setAttribute('placeholder', pack[key]);
     });
     document.documentElement.lang = lang;
   }
@@ -50,14 +44,22 @@ document.addEventListener('DOMContentLoaded', () => {
   if (langSelect) {
     langSelect.value = savedLang;
     langSelect.addEventListener('change', (e) => {
-      const chosen = e.target.value;
-      localStorage.setItem('trailmate_lang', chosen);
-      applyLanguage(chosen);
+      localStorage.setItem('trailmate_lang', e.target.value);
+      applyLanguage(e.target.value);
     });
   }
   applyLanguage(savedLang);
 
-  // 3. Forum Quick Date-Range Presets
+  function getHkTodayStr(offsetDays = 0) {
+    const now = new Date(Date.now() + offsetDays * 86400000);
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Hong_Kong',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(now);
+  }
+
   document.querySelectorAll('[data-date-preset]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const preset = btn.getAttribute('data-date-preset');
@@ -65,39 +67,29 @@ document.addEventListener('DOMContentLoaded', () => {
       const toInput = document.getElementById('dateTo');
       if (!fromInput || !toInput) return;
 
-      // Hong Kong is UTC+8 year-round.
-      const today = new Date(Date.now() + 8 * 60 * 60 * 1000);
-      const fmt = (date) => date.toISOString().slice(0, 10);
-
       if (preset === 'all') {
         fromInput.value = '';
         toInput.value = '';
       } else if (preset === 'today') {
-        fromInput.value = fmt(today);
-        toInput.value = fmt(today);
+        const d = getHkTodayStr(0);
+        fromInput.value = d;
+        toInput.value = d;
       } else if (preset === '7d') {
-        const past = new Date(today);
-        past.setUTCDate(past.getUTCDate() - 6);
-        fromInput.value = fmt(past);
-        toInput.value = fmt(today);
+        fromInput.value = getHkTodayStr(-7);
+        toInput.value = getHkTodayStr(0);
       } else if (preset === '30d') {
-        const past = new Date(today);
-        past.setUTCDate(past.getUTCDate() - 29);
-        fromInput.value = fmt(past);
-        toInput.value = fmt(today);
+        fromInput.value = getHkTodayStr(-30);
+        toInput.value = getHkTodayStr(0);
       }
       const form = fromInput.closest('form');
       if (form) form.submit();
     });
   });
 
-  // 4. Flash Banner Auto-Dismiss
   const flashBanner = document.querySelector('.flash');
   if (flashBanner) {
     const closeBtn = flashBanner.querySelector('.flash-close');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', () => flashBanner.remove());
-    }
+    if (closeBtn) closeBtn.addEventListener('click', () => flashBanner.remove());
     setTimeout(() => {
       if (flashBanner && flashBanner.parentNode) {
         flashBanner.style.transition = 'opacity 0.4s ease';
@@ -107,7 +99,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 5000);
   }
 
-  // 5. Quick-Fill Demo Credentials on Login
   document.querySelectorAll('[data-demo-user]').forEach((btn) => {
     btn.addEventListener('click', () => {
       const userField = document.getElementById('username');
@@ -119,13 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // 6. Delete Confirmation Prompt
   document.querySelectorAll('form[data-confirm]').forEach((form) => {
     form.addEventListener('submit', (e) => {
       const message = form.getAttribute('data-confirm') || 'Are you sure you want to delete this record?';
-      if (!window.confirm(message)) {
-        e.preventDefault();
-      }
+      if (!window.confirm(message)) e.preventDefault();
     });
   });
 });

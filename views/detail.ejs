@@ -10,10 +10,13 @@
       : 'badge-status-caution';
   const joined = trail.participants && trail.participants.includes(currentUser.username);
   const saved = trail.bookmarkedBy && trail.bookmarkedBy.includes(currentUser.username);
-  const mapsUrl = safeHttpUrl(trail.googleMapsUrl);
 %>
 
 <div class="container-narrow">
+  <div class="detail-cover-wrap">
+    <img src="<%= trail.imageUrl || '/images/dragons-back.jpg' %>" alt="<%= trail.trailName %>" class="detail-cover">
+  </div>
+
   <div class="workspace-header">
     <div>
       <div class="trail-badges" style="margin-bottom:10px;">
@@ -21,9 +24,10 @@
         <span class="badge <%= statusClass %>" data-i18n="<%= trail.trailStatus %>"><%= trail.trailStatus %></span>
         <span class="badge badge-neutral" data-i18n="<%= trail.district %>"><%= trail.district %></span>
       </div>
-      <h1 class="page-title"><%= trail.trailName %></h1>
+      <h1 class="glow-title" style="font-size:1.85rem;"><%= trail.trailName %></h1>
       <p class="header-subtitle">
-        Added by <strong><%= trail.createdBy %></strong>
+        <span data-i18n="lbl_created_by">Created by</span> <strong><%= trail.createdBy %></strong> &middot;
+        ID: <code class="text-gold"><%= trail._id %></code>
       </p>
     </div>
     <div class="header-actions">
@@ -33,13 +37,13 @@
           <%= saved ? 'Saved' : 'Save' %>
         </button>
       </form>
-      <% if (canManage(currentUser, trail.createdBy)) { %>
+      <% if (canEdit) { %>
         <a href="/trails/<%= trail._id %>/edit" class="btn btn-sky" data-i18n="btn_edit">Edit</a>
         <form
           action="/trails/<%= trail._id %>/delete"
           method="POST"
           style="display:inline;"
-          data-confirm="Delete '<%= trail.trailName %>'?"
+          data-confirm="Permanently delete '<%= trail.trailName %>'?"
         >
           <button type="submit" class="btn btn-danger" data-i18n="btn_delete">Delete</button>
         </form>
@@ -51,23 +55,22 @@
     <div class="panel">
       <div class="trail-metrics" style="margin-bottom:20px;">
         <div>
-          <div class="metric-val" style="font-size:1.2rem;"><%= trail.distanceKm %> km</div>
+          <div class="metric-val" style="font-size:1.25rem;"><%= trail.distanceKm %> km</div>
           <div class="metric-lbl" data-i18n="lbl_distance">Distance</div>
         </div>
         <div>
-          <div class="metric-val" style="font-size:1.2rem;"><%= trail.durationHrs %> hrs</div>
+          <div class="metric-val text-violet" style="font-size:1.25rem;"><%= trail.durationHrs %> hrs</div>
           <div class="metric-lbl" data-i18n="lbl_duration">Duration</div>
         </div>
         <div>
-          <div class="metric-val" style="font-size:1.2rem;"><%= trail.elevationM %> m</div>
+          <div class="metric-val text-sky" style="font-size:1.25rem;"><%= trail.elevationM %> m</div>
           <div class="metric-lbl" data-i18n="lbl_elevation">Elevation</div>
         </div>
       </div>
 
-      <!-- Real HK Transport Section -->
       <div class="transport-box">
-        <h3 style="font-size:0.86rem; color:var(--pine); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;" data-i18n="detail_transport">
-          Getting There
+        <h3 style="font-size:0.93rem; color:var(--sky); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:10px;" data-i18n="detail_transport">
+          Getting There (Real HK Transport &amp; Map)
         </h3>
         <div class="transport-row">
           <strong data-i18n="lbl_mtr">MTR:</strong>
@@ -83,10 +86,10 @@
             <%= trail.returnTransport %>
           </div>
         <% } %>
-        <% if (mapsUrl) { %>
+        <% if (trail.googleMapsUrl) { %>
           <div style="margin-top:12px;">
-            <a href="<%= mapsUrl %>" target="_blank" rel="noopener" class="btn btn-sky btn-sm" data-i18n="btn_open_gmaps">
-              Open in Google Maps ↗
+            <a href="<%= trail.googleMapsUrl %>" target="_blank" rel="noopener" class="btn btn-sky btn-sm" data-i18n="btn_open_gmaps">
+              Open Trailhead in Google Maps ↗
             </a>
           </div>
         <% } %>
@@ -98,11 +101,8 @@
       </div>
 
       <div class="detail-section">
-        <h3 data-i18n="detail_safety">Safety notes</h3>
-        <% if (trail.safetyNotes) { %>
-          <p style="color:var(--text-body);"><%= trail.safetyNotes %></p>
-        <% } %>
-        <p style="color:var(--text-muted);" data-i18n="check_conditions">Check current trail and transport information before you go.</p>
+        <h3 data-i18n="detail_safety">Safety &amp; Preparation Notes</h3>
+        <p style="color:var(--text-body);"><%= trail.safetyNotes || 'Standard hiking precautions apply.' %></p>
       </div>
 
       <div class="detail-section" style="margin-bottom:0;">
@@ -123,16 +123,16 @@
       <div class="detail-section">
         <h3 data-i18n="detail_meetup">Group Meetup</h3>
         <p style="margin-bottom:8px; color:var(--text-body);">
-          <strong>Date:</strong> <%= trail.meetupDate || 'Flexible / Self-Guided' %>
+          <strong data-i18n="lbl_date">Date:</strong> <%= trail.meetupDate || 'Flexible / Self-Guided' %>
         </p>
         <p style="margin-bottom:8px; color:var(--text-body);">
-          <strong>Meeting Point:</strong> <%= trail.meetingPoint %>
+          <strong data-i18n="lbl_meeting_point">Meeting Point:</strong> <%= trail.meetingPoint %>
         </p>
         <p style="margin-bottom:16px; color:var(--text-body);">
-          <strong>Capacity:</strong>
+          <strong data-i18n="lbl_capacity">Capacity:</strong>
           <span class="text-gold" style="font-weight:700;">
             <%= trail.participants ? trail.participants.length : 0 %> / <%= trail.maxParticipants %>
-          </span> hikers
+          </span>
         </p>
 
         <form action="/trails/<%= trail._id %>/join" method="POST">

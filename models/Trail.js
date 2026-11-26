@@ -77,13 +77,16 @@ const trailSchema = new mongoose.Schema(
       trim: true,
       default: ''
     },
+    imageUrl: {
+      type: String,
+      trim: true,
+      default: '/images/dragons-back.jpg'
+    },
     maxParticipants: {
       type: Number,
-      required: true,
       default: 12,
       min: [1, 'Max participants must be at least 1'],
-      max: [100, 'Max participants cannot exceed 100'],
-      validate: [Number.isInteger, 'Max participants must be a whole number']
+      max: [100, 'Max participants cannot exceed 100']
     },
     participants: {
       type: [String],
@@ -106,7 +109,7 @@ const trailSchema = new mongoose.Schema(
     safetyNotes: {
       type: String,
       trim: true,
-      default: 'Bring at least 1.5L of water, check HKO weather warnings before departure.'
+      default: 'Bring at least 1.5L of water and check HKO weather warnings before departure.'
     },
     createdBy: {
       type: String,

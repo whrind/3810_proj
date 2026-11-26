@@ -1,43 +1,41 @@
 <%- include('partials/header') %>
 
 <div class="app-shell">
-  <!-- Left Sidebar: Forum Categories -->
   <aside class="sidebar">
-    <div class="sidebar-panel sidebar-choices">
-      <div class="sidebar-section-label" data-i18n="sidebar_categories">Categories</div>
-      <a href="/forum" class="sidebar-item <%= !filters.category ? 'active' : '' %>">
-        <span class="sidebar-item-name" data-i18n="forum_all_posts">All Discussions</span>
-        <span class="sidebar-count"><%= totalPosts %></span>
-      </a>
+    <a href="/forum" class="sidebar-all-btn <%= !filters.category ? 'active' : '' %>">
+      <span data-i18n="forum_all_posts">All Discussions</span>
+      <span class="badge badge-neutral"><%= totalPosts %></span>
+    </a>
 
-      <% categoryStats.forEach((c) => { %>
-        <a
-          href="/forum?category=<%= encodeURIComponent(c.name) %>"
-          class="sidebar-item <%= filters.category === c.name ? 'active' : '' %>"
-        >
-          <span class="sidebar-item-name" data-i18n="<%= c.name %>"><%= c.name %></span>
-          <span class="sidebar-count"><%= c.count %></span>
-        </a>
-      <% }) %>
-    </div>
+    <% categoryStats.forEach((c) => { %>
+      <a
+        href="/forum?category=<%= encodeURIComponent(c.name) %>"
+        class="sidebar-card <%= filters.category === c.name ? 'active' : '' %>"
+      >
+        <div class="sidebar-card-title">
+          <span data-i18n="<%= c.name %>"><%= c.name %></span>
+          <span class="badge badge-neutral"><%= c.count %></span>
+        </div>
+        <div class="sidebar-row-link">
+          <span data-i18n="sidebar_filter_link">Click to filter</span>
+          <span>&rarr;</span>
+        </div>
+      </a>
+    <% }) %>
   </aside>
 
-  <!-- Main Forum Workspace -->
   <section>
     <div class="workspace-header">
       <div>
-        <h1 class="page-title" data-i18n="forum_title">Hiking Forum</h1>
-        <% if (demoMode) { %>
-          <p class="header-subtitle" data-i18n="forum_demo">Includes sample posts for the course demo.</p>
-        <% } %>
+        <h1 class="glow-title" data-i18n="forum_title">Hiking Forum</h1>
+        <p class="header-subtitle" data-i18n="forum_subtitle">Discuss HK trail conditions, gear, safety alerts &amp; find hiking buddies</p>
       </div>
       <div class="header-actions">
-        <a href="/api/forum" target="_blank" rel="noopener" class="btn btn-sky">Forum JSON API</a>
-        <a href="#new-post-panel" class="btn btn-emerald" data-i18n="forum_new_post">New post</a>
+        <a href="/api/forum" target="_blank" class="btn btn-sky">Forum JSON API</a>
+        <a href="#new-post-panel" class="btn btn-emerald" data-i18n="forum_new_post">Start a New Discussion</a>
       </div>
     </div>
 
-    <!-- Forum Multi-Condition Filter (Keyword, Date Range, Trail, Sort) -->
     <div class="panel filter-panel">
       <form action="/forum" method="GET">
         <% if (filters.category) { %>
@@ -97,18 +95,18 @@
       </form>
     </div>
 
-    <!-- Discussion Feed -->
     <% if (posts.length === 0) { %>
       <div class="empty-state" style="margin-bottom:22px;">
-        <h3 data-i18n="forum_empty">No posts match these filters.</h3>
-        <a href="/forum" class="btn btn-secondary" data-i18n="btn_reset">Reset</a>
+        <h3>No discussions match your filter</h3>
+        <p>Try widening the date range or start a new hiking topic below.</p>
       </div>
     <% } else { %>
       <div class="forum-list" style="margin-bottom:24px;">
         <% posts.forEach((post) => { %>
           <%
             const liked = post.likes && post.likes.includes(currentUser.username);
-            const dateStr = formatForumDate(post.createdAt);
+            const dateStr = formatHkDate(post.createdAt);
+            const allowed = canModify(currentUser, post.author);
             const catClass =
               post.category === 'Safety Alert'
                 ? 'badge-expert'
@@ -127,11 +125,11 @@
                 </div>
                 <h2 class="forum-post-title"><%= post.title %></h2>
                 <div class="forum-post-meta">
-                  Posted by <strong><%= post.authorDisplayName %></strong> (@<%= post.author %>) &middot; <%= dateStr %>
+                  <span data-i18n="lbl_posted_by">Posted by</span> <strong><%= post.authorDisplayName %></strong> (@<%= post.author %>) &middot; <%= dateStr %> (HKT)
                 </div>
               </div>
 
-              <% if (canManage(currentUser, post.author)) { %>
+              <% if (allowed) { %>
                 <form
                   action="/forum/<%= post._id %>/delete"
                   method="POST"
@@ -152,7 +150,7 @@
                   </button>
                 </form>
                 <span style="font-size:0.83rem; color:var(--text-muted);">
-                  <%= post.comments ? post.comments.length : 0 %> replies
+                  <%= post.comments ? post.comments.length : 0 %> <span data-i18n="lbl_replies">replies</span>
                 </span>
               </div>
             </div>
@@ -163,7 +161,7 @@
                   <div class="comment-item">
                     <div class="comment-meta">
                       <strong><%= c.authorDisplayName %></strong> (@<%= c.author %>) &middot;
-                      <%= formatForumDate(c.createdAt) %>
+                      <%= formatHkDate(c.createdAt) %>
                     </div>
                     <div><%= c.text %></div>
                   </div>
@@ -185,11 +183,31 @@
           </article>
         <% }) %>
       </div>
+
+      <% if (pagination.totalPages > 1) { %>
+        <%
+          const qs = new URLSearchParams();
+          if (filters.q) qs.set('q', filters.q);
+          if (filters.category) qs.set('category', filters.category);
+          if (filters.trail) qs.set('trail', filters.trail);
+          if (filters.dateFrom) qs.set('dateFrom', filters.dateFrom);
+          if (filters.dateTo) qs.set('dateTo', filters.dateTo);
+          if (filters.sort) qs.set('sort', filters.sort);
+        %>
+        <nav class="pagination-bar" style="margin-bottom:22px;">
+          <% if (pagination.page > 1) { qs.set('page', pagination.page - 1); %>
+            <a href="/forum?<%= qs.toString() %>" class="btn btn-secondary btn-sm">&larr; Prev</a>
+          <% } %>
+          <span class="pagination-info">Page <%= pagination.page %> / <%= pagination.totalPages %></span>
+          <% if (pagination.page < pagination.totalPages) { qs.set('page', pagination.page + 1); %>
+            <a href="/forum?<%= qs.toString() %>" class="btn btn-secondary btn-sm">Next &rarr;</a>
+          <% } %>
+        </nav>
+      <% } %>
     <% } %>
 
-    <!-- Create New Discussion Form -->
     <div class="panel" id="new-post-panel">
-      <h2 style="font-size:1.2rem; margin-bottom:14px;" data-i18n="forum_new_post">New post</h2>
+      <h2 style="font-size:1.2rem; margin-bottom:14px;" data-i18n="forum_new_post">Start a New Discussion</h2>
       <form action="/forum" method="POST">
         <div class="form-group">
           <label for="title" data-i18n="forum_lbl_title">Discussion Title *</label>
