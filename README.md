@@ -6,7 +6,7 @@
 - **Overview:** A server-side Express.js + MongoDB (Mongoose) + EJS web application for browsing and managing Hong Kong hiking trails, real MTR/bus/ferry access details, group hike RSVPs, and a community discussion forum.
 
 ## 2. Group Info
-- **Group Number:** `[Group No.]`
+- **Group Number:** `[Group No.39]`
 
 | Member | Name | SID | Role |
 | :--- | :--- | :--- | :--- |
