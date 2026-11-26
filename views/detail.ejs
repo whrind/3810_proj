@@ -10,6 +10,7 @@
       : 'badge-status-caution';
   const joined = trail.participants && trail.participants.includes(currentUser.username);
   const saved = trail.bookmarkedBy && trail.bookmarkedBy.includes(currentUser.username);
+  const mapsUrl = safeHttpUrl(trail.googleMapsUrl);
 %>
 
 <div class="container-narrow">
@@ -22,8 +23,7 @@
       </div>
       <h1 class="page-title"><%= trail.trailName %></h1>
       <p class="header-subtitle">
-        Created by <strong><%= trail.createdBy %></strong> &middot;
-        ID: <code><%= trail._id %></code>
+        Added by <strong><%= trail.createdBy %></strong>
       </p>
     </div>
     <div class="header-actions">
@@ -33,15 +33,17 @@
           <%= saved ? 'Saved' : 'Save' %>
         </button>
       </form>
-      <a href="/trails/<%= trail._id %>/edit" class="btn btn-sky" data-i18n="btn_edit">Edit</a>
-      <form
-        action="/trails/<%= trail._id %>/delete"
-        method="POST"
-        style="display:inline;"
-        data-confirm="Permanently delete '<%= trail.trailName %>'?"
-      >
-        <button type="submit" class="btn btn-danger" data-i18n="btn_delete">Delete</button>
-      </form>
+      <% if (canManage(currentUser, trail.createdBy)) { %>
+        <a href="/trails/<%= trail._id %>/edit" class="btn btn-sky" data-i18n="btn_edit">Edit</a>
+        <form
+          action="/trails/<%= trail._id %>/delete"
+          method="POST"
+          style="display:inline;"
+          data-confirm="Delete '<%= trail.trailName %>'?"
+        >
+          <button type="submit" class="btn btn-danger" data-i18n="btn_delete">Delete</button>
+        </form>
+      <% } %>
     </div>
   </div>
 
@@ -81,10 +83,10 @@
             <%= trail.returnTransport %>
           </div>
         <% } %>
-        <% if (trail.googleMapsUrl) { %>
+        <% if (mapsUrl) { %>
           <div style="margin-top:12px;">
-            <a href="<%= trail.googleMapsUrl %>" target="_blank" rel="noopener" class="btn btn-sky btn-sm" data-i18n="btn_open_gmaps">
-              Open Trailhead in Google Maps ↗
+            <a href="<%= mapsUrl %>" target="_blank" rel="noopener" class="btn btn-sky btn-sm" data-i18n="btn_open_gmaps">
+              Open in Google Maps ↗
             </a>
           </div>
         <% } %>
@@ -96,8 +98,11 @@
       </div>
 
       <div class="detail-section">
-        <h3 data-i18n="detail_safety">Safety &amp; Preparation Notes</h3>
-        <p style="color:var(--text-body);"><%= trail.safetyNotes || 'Standard hiking precautions apply.' %></p>
+        <h3 data-i18n="detail_safety">Safety notes</h3>
+        <% if (trail.safetyNotes) { %>
+          <p style="color:var(--text-body);"><%= trail.safetyNotes %></p>
+        <% } %>
+        <p style="color:var(--text-muted);" data-i18n="check_conditions">Check current trail and transport information before you go.</p>
       </div>
 
       <div class="detail-section" style="margin-bottom:0;">

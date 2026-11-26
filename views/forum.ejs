@@ -3,8 +3,8 @@
 <div class="app-shell">
   <!-- Left Sidebar: Forum Categories -->
   <aside class="sidebar">
-    <div class="sidebar-panel">
-      <div class="sidebar-section-label">Categories</div>
+    <div class="sidebar-panel sidebar-choices">
+      <div class="sidebar-section-label" data-i18n="sidebar_categories">Categories</div>
       <a href="/forum" class="sidebar-item <%= !filters.category ? 'active' : '' %>">
         <span class="sidebar-item-name" data-i18n="forum_all_posts">All Discussions</span>
         <span class="sidebar-count"><%= totalPosts %></span>
@@ -27,11 +27,13 @@
     <div class="workspace-header">
       <div>
         <h1 class="page-title" data-i18n="forum_title">Hiking Forum</h1>
-        <p class="header-subtitle" data-i18n="forum_subtitle">Discuss HK trail conditions, gear, safety alerts &amp; find hiking buddies</p>
+        <% if (demoMode) { %>
+          <p class="header-subtitle" data-i18n="forum_demo">Includes sample posts for the course demo.</p>
+        <% } %>
       </div>
       <div class="header-actions">
-        <a href="/api/forum" target="_blank" class="btn btn-sky">Forum JSON API</a>
-        <a href="#new-post-panel" class="btn btn-emerald" data-i18n="forum_new_post">New Discussion</a>
+        <a href="/api/forum" target="_blank" rel="noopener" class="btn btn-sky">Forum JSON API</a>
+        <a href="#new-post-panel" class="btn btn-emerald" data-i18n="forum_new_post">New post</a>
       </div>
     </div>
 
@@ -98,15 +100,15 @@
     <!-- Discussion Feed -->
     <% if (posts.length === 0) { %>
       <div class="empty-state" style="margin-bottom:22px;">
-        <h3>No discussions match your filter</h3>
-        <p>Try widening the date range or start a new hiking topic below.</p>
+        <h3 data-i18n="forum_empty">No posts match these filters.</h3>
+        <a href="/forum" class="btn btn-secondary" data-i18n="btn_reset">Reset</a>
       </div>
     <% } else { %>
       <div class="forum-list" style="margin-bottom:24px;">
         <% posts.forEach((post) => { %>
           <%
             const liked = post.likes && post.likes.includes(currentUser.username);
-            const dateStr = post.createdAt ? new Date(post.createdAt).toISOString().slice(0, 10) : '';
+            const dateStr = formatForumDate(post.createdAt);
             const catClass =
               post.category === 'Safety Alert'
                 ? 'badge-expert'
@@ -129,13 +131,15 @@
                 </div>
               </div>
 
-              <form
-                action="/forum/<%= post._id %>/delete"
-                method="POST"
-                data-confirm="Delete discussion '<%= post.title %>'?"
-              >
-                <button type="submit" class="btn btn-danger btn-sm" data-i18n="btn_delete">Delete</button>
-              </form>
+              <% if (canManage(currentUser, post.author)) { %>
+                <form
+                  action="/forum/<%= post._id %>/delete"
+                  method="POST"
+                  data-confirm="Delete discussion '<%= post.title %>'?"
+                >
+                  <button type="submit" class="btn btn-danger btn-sm" data-i18n="btn_delete">Delete</button>
+                </form>
+              <% } %>
             </div>
 
             <div class="forum-post-body"><%= post.content %></div>
@@ -159,7 +163,7 @@
                   <div class="comment-item">
                     <div class="comment-meta">
                       <strong><%= c.authorDisplayName %></strong> (@<%= c.author %>) &middot;
-                      <%= c.createdAt ? new Date(c.createdAt).toISOString().slice(0, 10) : '' %>
+                      <%= formatForumDate(c.createdAt) %>
                     </div>
                     <div><%= c.text %></div>
                   </div>
@@ -185,7 +189,7 @@
 
     <!-- Create New Discussion Form -->
     <div class="panel" id="new-post-panel">
-      <h2 style="font-size:1.2rem; margin-bottom:14px;" data-i18n="forum_new_post">Start a New Discussion</h2>
+      <h2 style="font-size:1.2rem; margin-bottom:14px;" data-i18n="forum_new_post">New post</h2>
       <form action="/forum" method="POST">
         <div class="form-group">
           <label for="title" data-i18n="forum_lbl_title">Discussion Title *</label>

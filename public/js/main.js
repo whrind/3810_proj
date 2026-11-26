@@ -65,13 +65,9 @@ document.addEventListener('DOMContentLoaded', () => {
       const toInput = document.getElementById('dateTo');
       if (!fromInput || !toInput) return;
 
-      const today = new Date();
-      const fmt = (d) => {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
-      };
+      // Hong Kong is UTC+8 year-round.
+      const today = new Date(Date.now() + 8 * 60 * 60 * 1000);
+      const fmt = (date) => date.toISOString().slice(0, 10);
 
       if (preset === 'all') {
         fromInput.value = '';
@@ -81,12 +77,12 @@ document.addEventListener('DOMContentLoaded', () => {
         toInput.value = fmt(today);
       } else if (preset === '7d') {
         const past = new Date(today);
-        past.setDate(past.getDate() - 7);
+        past.setUTCDate(past.getUTCDate() - 6);
         fromInput.value = fmt(past);
         toInput.value = fmt(today);
       } else if (preset === '30d') {
         const past = new Date(today);
-        past.setDate(past.getDate() - 30);
+        past.setUTCDate(past.getUTCDate() - 29);
         fromInput.value = fmt(past);
         toInput.value = fmt(today);
       }

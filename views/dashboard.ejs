@@ -3,7 +3,7 @@
 <div class="app-shell">
   <!-- Left Sidebar -->
   <aside class="sidebar">
-    <div class="sidebar-panel">
+    <div class="sidebar-panel sidebar-shortcuts">
       <a href="/trails" class="sidebar-item <%= !filters.district && filters.saved !== '1' ? 'active' : '' %>">
         <span class="sidebar-item-name" data-i18n="sidebar_all_hk">All Trails</span>
         <span class="sidebar-count"><%= stats.totalCount %></span>
@@ -15,8 +15,8 @@
       </a>
     </div>
 
-    <div class="sidebar-panel">
-      <div class="sidebar-section-label">Districts</div>
+    <div class="sidebar-panel sidebar-choices">
+      <div class="sidebar-section-label" data-i18n="sidebar_districts">Districts</div>
       <% districtStats.forEach((d) => { %>
         <a
           href="/trails?district=<%= encodeURIComponent(d.name) %>"
@@ -45,11 +45,9 @@
     <div class="workspace-header">
       <div>
         <h1 class="page-title" data-i18n="dash_title">Hong Kong Trails</h1>
-        <p class="header-subtitle" data-i18n="dash_subtitle">Routes, MTR &amp; bus access, and weekend group hikes</p>
+        <p class="header-subtitle" data-i18n="dash_subtitle">Find a route by district, difficulty or distance.</p>
       </div>
       <div class="header-actions">
-        <a href="/forum" class="btn btn-secondary" data-i18n="nav_forum">Hiking Forum</a>
-        <a href="/api/trails" target="_blank" class="btn btn-sky" data-i18n="btn_json_api">JSON API</a>
         <a href="/trails/new" class="btn btn-emerald" data-i18n="btn_add_trail">+ Add Trail</a>
       </div>
     </div>
@@ -59,25 +57,21 @@
       <div class="stat-cell">
         <div class="stat-label" data-i18n="stat_total">Total Trails</div>
         <div class="stat-value"><%= stats.totalCount %></div>
-        <div class="stat-sub" data-i18n="stat_total_sub">Tracked across 5 HK districts</div>
       </div>
 
       <div class="stat-cell">
         <div class="stat-label" data-i18n="stat_dist">Combined Distance</div>
         <div class="stat-value"><%= stats.totalDistance %> km</div>
-        <div class="stat-sub" data-i18n="stat_dist_sub">Total mapped route length</div>
       </div>
 
       <div class="stat-cell">
-        <div class="stat-label" data-i18n="stat_open">Open Trail Status</div>
+        <div class="stat-label" data-i18n="stat_open">Marked open</div>
         <div class="stat-value text-emerald"><%= stats.openCount %> / <%= stats.totalCount %></div>
-        <div class="stat-sub" data-i18n="stat_open_sub">Clear &amp; ready for hiking</div>
       </div>
 
       <div class="stat-cell">
         <div class="stat-label" data-i18n="stat_rsvp">Group Hike RSVPs</div>
         <div class="stat-value"><%= stats.totalRsvps %></div>
-        <div class="stat-sub" data-i18n="stat_rsvp_sub">Total hikers signed up</div>
       </div>
     </div>
 
@@ -165,9 +159,8 @@
     <!-- Trail Cards -->
     <% if (trails.length === 0) { %>
       <div class="empty-state">
-        <h3>No matching trails found</h3>
-        <p>Try clearing one of your filters or create a new trail record.</p>
-        <a href="/trails/new" class="btn btn-emerald" data-i18n="btn_add_trail">+ Add Trail</a>
+        <h3 data-i18n="trails_empty">No trails match these filters.</h3>
+        <a href="/trails" class="btn btn-secondary" data-i18n="btn_reset">Reset</a>
       </div>
     <% } else { %>
       <div class="trail-grid">
@@ -182,6 +175,7 @@
                 : 'badge-status-caution';
             const joined = trail.participants && trail.participants.includes(currentUser.username);
             const saved = trail.bookmarkedBy && trail.bookmarkedBy.includes(currentUser.username);
+            const mapsUrl = safeHttpUrl(trail.googleMapsUrl);
           %>
           <article class="trail-card diff-<%= diffSlug %>">
             <div>
@@ -243,19 +237,20 @@
               </div>
 
               <div class="card-btn-group">
-                <% if (trail.googleMapsUrl) { %>
-                  <a href="<%= trail.googleMapsUrl %>" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" data-i18n="btn_gmaps">Google Maps</a>
+                <% if (mapsUrl) { %>
+                  <a href="<%= mapsUrl %>" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" data-i18n="btn_gmaps">Google Maps</a>
                 <% } %>
-                <a href="/trails/<%= trail._id %>" class="btn btn-secondary btn-sm" data-i18n="btn_view">View</a>
-                <a href="/trails/<%= trail._id %>/edit" class="btn btn-sky btn-sm" data-i18n="btn_edit">Edit</a>
-                <form
-                  action="/trails/<%= trail._id %>/delete"
-                  method="POST"
-                  style="display:inline;"
-                  data-confirm="Delete '<%= trail.trailName %>'? This cannot be undone."
-                >
-                  <button type="submit" class="btn btn-danger btn-sm" data-i18n="btn_delete">Delete</button>
-                </form>
+                <% if (canManage(currentUser, trail.createdBy)) { %>
+                  <a href="/trails/<%= trail._id %>/edit" class="btn btn-sky btn-sm" data-i18n="btn_edit">Edit</a>
+                  <form
+                    action="/trails/<%= trail._id %>/delete"
+                    method="POST"
+                    style="display:inline;"
+                    data-confirm="Delete '<%= trail.trailName %>'?"
+                  >
+                    <button type="submit" class="btn btn-danger btn-sm" data-i18n="btn_delete">Delete</button>
+                  </form>
+                <% } %>
               </div>
             </div>
           </article>

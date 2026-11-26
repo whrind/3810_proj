@@ -79,9 +79,11 @@ const trailSchema = new mongoose.Schema(
     },
     maxParticipants: {
       type: Number,
+      required: true,
       default: 12,
       min: [1, 'Max participants must be at least 1'],
-      max: [100, 'Max participants cannot exceed 100']
+      max: [100, 'Max participants cannot exceed 100'],
+      validate: [Number.isInteger, 'Max participants must be a whole number']
     },
     participants: {
       type: [String],

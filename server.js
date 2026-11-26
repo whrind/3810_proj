@@ -1,4 +1,5 @@
 require('dotenv').config();
+const { randomBytes } = require('node:crypto');
 const path = require('path');
 const express = require('express');
 const mongoose = require('mongoose');
@@ -10,8 +11,11 @@ const ForumPost = require('./models/ForumPost');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '127.0.0.1';
+const PRODUCTION = process.env.NODE_ENV === 'production';
+const DEMO_MODE = !PRODUCTION && ['127.0.0.1', '::1'].includes(HOST);
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/trailmate_hk';
-const SESSION_SECRET = process.env.SESSION_SECRET || 'comp3810sef-trailmate-hk-secret-2026';
+const SESSION_SECRET = process.env.SESSION_SECRET || randomBytes(32).toString('hex');
 
 const DISTRICTS = [
   'Hong Kong Island',
@@ -32,6 +36,8 @@ const FORUM_CATEGORIES = [
 
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+app.locals.demoMode = DEMO_MODE;
+if (PRODUCTION) app.set('trust proxy', 'loopback');
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
@@ -46,6 +52,7 @@ app.use(
     cookie: {
       httpOnly: true,
       sameSite: 'lax',
+      secure: PRODUCTION,
       maxAge: 1000 * 60 * 60 * 6
     }
   })
@@ -75,6 +82,46 @@ function requireAuth(req, res, next) {
   return res.redirect('/login');
 }
 
+function canManage(user, owner) {
+  return Boolean(user && (user.role === 'admin' || user.username === owner));
+}
+
+app.locals.canManage = canManage;
+
+function requireApiWrite(req, res, next) {
+  const origin = req.get('Origin');
+  if (origin && origin !== `${req.protocol}://${req.get('Host')}`) {
+    return res.status(403).json({ success: false, error: 'This request must come from the same site.' });
+  }
+  if (req.session.user || (DEMO_MODE && ['localhost', '127.0.0.1', '[::1]'].includes(req.hostname))) {
+    return next();
+  }
+  return res.status(401).json({ success: false, error: 'Sign in to change records.' });
+}
+
+function canManageApiRecord(req, owner) {
+  return DEMO_MODE || canManage(req.session.user, owner);
+}
+
+function startSession(req, user) {
+  return new Promise((resolve, reject) => {
+    req.session.regenerate((err) => {
+      if (err) return reject(err);
+      req.session.user = {
+        id: user._id.toString(),
+        username: user.username,
+        displayName: user.displayName,
+        role: user.role
+      };
+      resolve();
+    });
+  });
+}
+
+function readText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
 function parseListField(value) {
   if (!value) return [];
   if (Array.isArray(value)) {
@@ -101,19 +148,65 @@ function sanitizeHttpUrl(rawUrl) {
   return '';
 }
 
-function getSafeRedirect(req, fallback) {
+app.locals.safeHttpUrl = sanitizeHttpUrl;
+
+function getSafeRedirect(req, listPath, fallback) {
   const referer = req.get('Referer');
   if (!referer) return fallback;
   try {
     const parsed = new URL(referer);
     const reqHost = req.get('host');
-    if (reqHost && parsed.host === reqHost) {
+    if (parsed.host === reqHost && parsed.pathname === listPath) {
       return `${parsed.pathname}${parsed.search}${parsed.hash}`;
     }
   } catch (err) {
     return fallback;
   }
   return fallback;
+}
+
+const TRAIL_WRITE_FIELDS = [
+  'trailName', 'district', 'difficulty', 'distanceKm', 'durationHrs', 'elevationM',
+  'trailStatus', 'meetupDate', 'meetingPoint', 'nearestMtr', 'busRoutes',
+  'returnTransport', 'googleMapsUrl', 'maxParticipants', 'gearChecklist',
+  'description', 'safetyNotes'
+];
+const FORUM_WRITE_FIELDS = ['title', 'category', 'relatedTrail', 'content'];
+
+function readFields(body, names) {
+  return Object.fromEntries(names.filter((name) => Object.hasOwn(body, name))
+    .map((name) => [name, body[name]]));
+}
+
+function readTrailFields(body) {
+  const fields = readFields(body, TRAIL_WRITE_FIELDS);
+  if ('gearChecklist' in fields) fields.gearChecklist = parseListField(fields.gearChecklist);
+  if ('googleMapsUrl' in fields) fields.googleMapsUrl = sanitizeHttpUrl(fields.googleMapsUrl);
+  return fields;
+}
+
+function readTrailForm(body) {
+  return {
+    ...readTrailFields(body),
+    elevationM: Number(body.elevationM || 0),
+    maxParticipants: Number(body.maxParticipants || 12)
+  };
+}
+
+app.locals.formatForumDate = (date) =>
+  date ? new Date(new Date(date).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10) : '';
+
+function participantCount() {
+  return { $size: { $ifNull: ['$participants', []] } };
+}
+
+function updateTrail(id, fields) {
+  const filter = { _id: id };
+  const limit = Number(fields.maxParticipants);
+  if (Number.isInteger(limit) && limit >= 1 && limit <= 100) {
+    filter.$expr = { $lte: [participantCount(), limit] };
+  }
+  return Trail.findOneAndUpdate(filter, { $set: fields }, { new: true, runValidators: true });
 }
 
 function buildTrailFilter(query, currentUsername) {
@@ -190,13 +283,13 @@ function buildForumFilter(query) {
   if (dateFrom || dateTo) {
     filter.createdAt = {};
     if (dateFrom) {
-      const start = new Date(`${dateFrom}T00:00:00.000Z`);
+      const start = new Date(`${dateFrom}T00:00:00.000+08:00`);
       if (!Number.isNaN(start.getTime())) {
         filter.createdAt.$gte = start;
       }
     }
     if (dateTo) {
-      const end = new Date(`${dateTo}T23:59:59.999Z`);
+      const end = new Date(`${dateTo}T23:59:59.999+08:00`);
       if (!Number.isNaN(end.getTime())) {
         filter.createdAt.$lte = end;
       }
@@ -230,7 +323,7 @@ async function seedInitialData() {
     for (const u of demoUsers) {
       await User.create(u);
     }
-    console.log('Seeded default demo users: admin / password123, hiker1 / password123');
+    console.log('Added two demo accounts.');
   }
 
   const trailCount = await Trail.countDocuments();
@@ -376,7 +469,7 @@ async function seedInitialData() {
       }
     ];
     await Trail.insertMany(sampleTrails);
-    console.log(`Seeded ${sampleTrails.length} sample Hong Kong trails with real transport info.`);
+    console.log(`Added ${sampleTrails.length} sample trails.`);
   }
 
   const forumCount = await ForumPost.countDocuments();
@@ -482,21 +575,16 @@ app.post('/login', async (req, res) => {
     }
 
     const user = await User.findOne({ username });
-    if (!user || !(await user.comparePassword(password))) {
+    const demoPassword = ['admin', 'hiker1'].includes(username) && password === 'password123';
+    if ((!DEMO_MODE && demoPassword) || !user || !(await user.comparePassword(password))) {
       return res.status(401).render('login', {
         pageTitle: 'Sign In — TrailMate HK',
-        error: 'Invalid username or password. Try admin / password123.',
+        error: 'Username or password is incorrect.',
         username
       });
     }
 
-    req.session.user = {
-      id: user._id.toString(),
-      username: user.username,
-      displayName: user.displayName,
-      role: user.role
-    };
-    setFlash(req, 'success', `Welcome back, ${user.displayName}!`);
+    await startSession(req, user);
     return res.redirect('/trails');
   } catch (err) {
     console.error('Login error:', err);
@@ -521,9 +609,9 @@ app.get('/register', (req, res) => {
 
 app.post('/register', async (req, res) => {
   const form = {
-    username: typeof req.body.username === 'string' ? req.body.username.trim() : '',
-    displayName: typeof req.body.displayName === 'string' ? req.body.displayName.trim() : '',
-    email: typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : ''
+    username: readText(req.body.username),
+    displayName: readText(req.body.displayName),
+    email: readText(req.body.email).toLowerCase()
   };
   const password = typeof req.body.password === 'string' ? req.body.password : '';
   const confirmPassword = typeof req.body.confirmPassword === 'string' ? req.body.confirmPassword : '';
@@ -570,13 +658,8 @@ app.post('/register', async (req, res) => {
       role: 'member'
     });
 
-    req.session.user = {
-      id: newUser._id.toString(),
-      username: newUser.username,
-      displayName: newUser.displayName,
-      role: newUser.role
-    };
-    setFlash(req, 'success', `Account created! Welcome to TrailMate HK, ${newUser.displayName}.`);
+    await startSession(req, newUser);
+    setFlash(req, 'success', 'Account created.');
     return res.redirect('/trails');
   } catch (err) {
     console.error('Register error:', err);
@@ -589,13 +672,6 @@ app.post('/register', async (req, res) => {
 });
 
 app.post('/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.clearCookie('trailmate.sid');
-    return res.redirect('/login');
-  });
-});
-
-app.get('/logout', (req, res) => {
   req.session.destroy(() => {
     res.clearCookie('trailmate.sid');
     return res.redirect('/login');
@@ -666,34 +742,16 @@ app.get('/trails/new', requireAuth, (req, res) => {
 });
 
 app.post('/trails', requireAuth, async (req, res) => {
-  const trailName = (req.body.trailName || '').trim();
-  const payload = {
-    trailName,
-    district: req.body.district,
-    difficulty: req.body.difficulty,
-    distanceKm: Number(req.body.distanceKm),
-    durationHrs: Number(req.body.durationHrs),
-    elevationM: Number(req.body.elevationM || 0),
-    trailStatus: req.body.trailStatus || 'Open',
-    meetupDate: (req.body.meetupDate || '').trim(),
-    meetingPoint: (req.body.meetingPoint || '').trim(),
-    nearestMtr: (req.body.nearestMtr || '').trim(),
-    busRoutes: (req.body.busRoutes || '').trim(),
-    returnTransport: (req.body.returnTransport || '').trim(),
-    googleMapsUrl:
-      sanitizeHttpUrl(req.body.googleMapsUrl) ||
-      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${trailName} Hong Kong`)}`,
-    maxParticipants: Number(req.body.maxParticipants || 12),
-    gearChecklist: parseListField(req.body.gearChecklist),
-    description: (req.body.description || '').trim(),
-    safetyNotes: (req.body.safetyNotes || '').trim(),
-    participants: [req.session.user.username],
-    createdBy: req.session.user.username
-  };
-
   try {
+    const payload = readTrailForm(req.body);
+    if (!payload.googleMapsUrl && readText(payload.trailName)) {
+      const query = encodeURIComponent(`${payload.trailName.trim()} Hong Kong`);
+      payload.googleMapsUrl = `https://www.google.com/maps/search/?api=1&query=${query}`;
+    }
+    payload.participants = [req.session.user.username];
+    payload.createdBy = req.session.user.username;
     const created = await Trail.create(payload);
-    setFlash(req, 'success', `Trail "${created.trailName}" was created successfully.`);
+    setFlash(req, 'success', 'Trail added.');
     return res.redirect(`/trails/${created._id}`);
   } catch (err) {
     return res.status(400).render('create', {
@@ -736,6 +794,9 @@ app.get('/trails/:id/edit', requireAuth, async (req, res) => {
       setFlash(req, 'danger', 'Trail not found.');
       return res.redirect('/trails');
     }
+    if (!canManage(req.session.user, trail.createdBy)) {
+      return res.status(403).send('Only the trail author or an admin can edit this trail.');
+    }
     return res.render('edit', {
       pageTitle: `Edit ${trail.trailName} — TrailMate HK`,
       trail,
@@ -754,40 +815,29 @@ app.post('/trails/:id/update', requireAuth, async (req, res) => {
       return res.redirect('/trails');
     }
 
-    const updateData = {
-      trailName: (req.body.trailName || '').trim(),
-      district: req.body.district,
-      difficulty: req.body.difficulty,
-      distanceKm: Number(req.body.distanceKm),
-      durationHrs: Number(req.body.durationHrs),
-      elevationM: Number(req.body.elevationM || 0),
-      trailStatus: req.body.trailStatus || 'Open',
-      meetupDate: (req.body.meetupDate || '').trim(),
-      meetingPoint: (req.body.meetingPoint || '').trim(),
-      nearestMtr: (req.body.nearestMtr || '').trim(),
-      busRoutes: (req.body.busRoutes || '').trim(),
-      returnTransport: (req.body.returnTransport || '').trim(),
-      googleMapsUrl: sanitizeHttpUrl(req.body.googleMapsUrl),
-      maxParticipants: Number(req.body.maxParticipants || 12),
-      gearChecklist: parseListField(req.body.gearChecklist),
-      description: (req.body.description || '').trim(),
-      safetyNotes: (req.body.safetyNotes || '').trim()
-    };
-
-    const updated = await Trail.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
-      runValidators: true
-    });
-
-    if (!updated) {
+    const trail = await Trail.findById(req.params.id).lean();
+    if (!trail) {
       setFlash(req, 'danger', 'Trail not found.');
       return res.redirect('/trails');
     }
+    if (!canManage(req.session.user, trail.createdBy)) {
+      return res.status(403).send('Only the trail author or an admin can edit this trail.');
+    }
 
-    setFlash(req, 'success', `Trail "${updated.trailName}" updated successfully.`);
+    const updated = await updateTrail(req.params.id, readTrailForm(req.body));
+
+    if (!updated) {
+      return res.status(409).render('edit', {
+        pageTitle: 'Edit Trail — TrailMate HK',
+        trail: { ...readTrailForm(req.body), _id: req.params.id },
+        error: 'Capacity cannot be lower than the number of hikers already signed up.'
+      });
+    }
+
+    setFlash(req, 'success', 'Changes saved.');
     return res.redirect(`/trails/${updated._id}`);
   } catch (err) {
-    const fallbackTrail = { _id: req.params.id, ...req.body, gearChecklist: parseListField(req.body.gearChecklist) };
+    const fallbackTrail = { ...readTrailForm(req.body), _id: req.params.id };
     return res.status(400).render('edit', {
       pageTitle: 'Edit Trail — TrailMate HK',
       trail: fallbackTrail,
@@ -802,24 +852,24 @@ app.post('/trails/:id/join', requireAuth, async (req, res) => {
       setFlash(req, 'danger', 'Invalid trail ID.');
       return res.redirect('/trails');
     }
-    const trail = await Trail.findById(req.params.id);
+    const trail = await Trail.findById(req.params.id).lean();
     if (!trail) {
       setFlash(req, 'danger', 'Trail not found.');
       return res.redirect('/trails');
     }
     const uname = req.session.user.username;
-    const idx = trail.participants.indexOf(uname);
-    if (idx >= 0) {
-      trail.participants.splice(idx, 1);
-      setFlash(req, 'info', `You left the hike "${trail.trailName}".`);
-    } else if (trail.participants.length >= trail.maxParticipants) {
-      setFlash(req, 'warning', `Hike "${trail.trailName}" is already full.`);
+    if (trail.participants?.includes(uname)) {
+      await Trail.updateOne({ _id: trail._id }, { $pull: { participants: uname } });
+      setFlash(req, 'info', 'You left this hike.');
     } else {
-      trail.participants.push(uname);
-      setFlash(req, 'success', `You joined the hike "${trail.trailName}"!`);
+      const result = await Trail.updateOne({
+        _id: trail._id,
+        $expr: { $lt: [participantCount(), { $ifNull: ['$maxParticipants', 12] }] }
+      }, { $addToSet: { participants: uname } });
+      if (result.matchedCount) setFlash(req, 'success', 'You joined this hike.');
+      else setFlash(req, 'warning', 'This hike has no spots left.');
     }
-    await trail.save();
-    return res.redirect(getSafeRedirect(req, `/trails/${trail._id}`));
+    return res.redirect(getSafeRedirect(req, '/trails', `/trails/${trail._id}`));
   } catch (err) {
     console.error('Join/leave error:', err);
     return res.redirect('/trails');
@@ -838,17 +888,14 @@ app.post('/trails/:id/bookmark', requireAuth, async (req, res) => {
       return res.redirect('/trails');
     }
     const uname = req.session.user.username;
-    if (!trail.bookmarkedBy) trail.bookmarkedBy = [];
-    const idx = trail.bookmarkedBy.indexOf(uname);
-    if (idx >= 0) {
-      trail.bookmarkedBy.splice(idx, 1);
-      setFlash(req, 'info', `Removed "${trail.trailName}" from Saved Trails.`);
+    if (trail.bookmarkedBy?.includes(uname)) {
+      await Trail.updateOne({ _id: trail._id }, { $pull: { bookmarkedBy: uname } });
+      setFlash(req, 'info', 'Trail removed from your saved list.');
     } else {
-      trail.bookmarkedBy.push(uname);
-      setFlash(req, 'success', `Saved "${trail.trailName}" to your bookmarks.`);
+      await Trail.updateOne({ _id: trail._id }, { $addToSet: { bookmarkedBy: uname } });
+      setFlash(req, 'success', 'Trail saved.');
     }
-    await trail.save();
-    return res.redirect(getSafeRedirect(req, `/trails/${trail._id}`));
+    return res.redirect(getSafeRedirect(req, '/trails', `/trails/${trail._id}`));
   } catch (err) {
     console.error('Bookmark error:', err);
     return res.redirect('/trails');
@@ -861,12 +908,16 @@ app.post('/trails/:id/delete', requireAuth, async (req, res) => {
       setFlash(req, 'danger', 'Invalid trail ID.');
       return res.redirect('/trails');
     }
-    const deleted = await Trail.findByIdAndDelete(req.params.id);
-    if (!deleted) {
+    const trail = await Trail.findById(req.params.id).lean();
+    if (!trail) {
       setFlash(req, 'danger', 'Trail not found.');
-    } else {
-      setFlash(req, 'success', `Trail "${deleted.trailName}" has been deleted.`);
+      return res.redirect('/trails');
     }
+    if (!canManage(req.session.user, trail.createdBy)) {
+      return res.status(403).send('Only the trail author or an admin can delete this trail.');
+    }
+    await Trail.deleteOne({ _id: trail._id });
+    setFlash(req, 'success', 'Trail deleted.');
     return res.redirect('/trails');
   } catch (err) {
     console.error('Delete error:', err);
@@ -925,12 +976,12 @@ app.get('/forum', requireAuth, async (req, res) => {
 
 app.post('/forum', requireAuth, async (req, res) => {
   try {
-    const title = (req.body.title || '').trim();
-    const content = (req.body.content || '').trim();
+    const title = readText(req.body.title);
+    const content = readText(req.body.content);
     const category = FORUM_CATEGORIES.includes(req.body.category)
       ? req.body.category
       : 'Trail Conditions';
-    const relatedTrail = (req.body.relatedTrail || 'General').trim() || 'General';
+    const relatedTrail = readText(req.body.relatedTrail) || 'General';
 
     if (!title || !content) {
       setFlash(req, 'danger', 'Post title and content are required.');
@@ -946,7 +997,7 @@ app.post('/forum', requireAuth, async (req, res) => {
       authorDisplayName: req.session.user.displayName
     });
 
-    setFlash(req, 'success', 'Your discussion post has been published!');
+    setFlash(req, 'success', 'Post published.');
     return res.redirect('/forum');
   } catch (err) {
     console.error('Create post error:', err);
@@ -960,7 +1011,7 @@ app.post('/forum/:id/comment', requireAuth, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.redirect('/forum');
     }
-    const text = (req.body.text || '').trim();
+    const text = readText(req.body.text);
     if (!text) {
       setFlash(req, 'warning', 'Comment cannot be empty.');
       return res.redirect('/forum');
@@ -976,7 +1027,7 @@ app.post('/forum/:id/comment', requireAuth, async (req, res) => {
       text
     });
     await post.save();
-    setFlash(req, 'success', 'Reply added!');
+    setFlash(req, 'success', 'Reply posted.');
     return res.redirect(`/forum#post-${post._id}`);
   } catch (err) {
     console.error('Comment error:', err);
@@ -989,17 +1040,15 @@ app.post('/forum/:id/like', requireAuth, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.redirect('/forum');
     }
-    const post = await ForumPost.findById(req.params.id);
+    const post = await ForumPost.findById(req.params.id).lean();
     if (!post) return res.redirect('/forum');
     const uname = req.session.user.username;
-    const idx = post.likes.indexOf(uname);
-    if (idx >= 0) {
-      post.likes.splice(idx, 1);
+    if (post.likes?.includes(uname)) {
+      await ForumPost.updateOne({ _id: post._id }, { $pull: { likes: uname } });
     } else {
-      post.likes.push(uname);
+      await ForumPost.updateOne({ _id: post._id }, { $addToSet: { likes: uname } });
     }
-    await post.save();
-    return res.redirect(getSafeRedirect(req, `/forum#post-${post._id}`));
+    return res.redirect(getSafeRedirect(req, '/forum', `/forum#post-${post._id}`));
   } catch (err) {
     console.error('Like error:', err);
     return res.redirect('/forum');
@@ -1011,9 +1060,13 @@ app.post('/forum/:id/delete', requireAuth, async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.redirect('/forum');
     }
-    const deleted = await ForumPost.findByIdAndDelete(req.params.id);
-    if (deleted) {
-      setFlash(req, 'success', `Deleted forum post "${deleted.title}".`);
+    const post = await ForumPost.findById(req.params.id).lean();
+    if (post) {
+      if (!canManage(req.session.user, post.author)) {
+        return res.status(403).send('Only the author or an admin can delete this post.');
+      }
+      await ForumPost.deleteOne({ _id: post._id });
+      setFlash(req, 'success', 'Post deleted.');
     }
     return res.redirect('/forum');
   } catch (err) {
@@ -1022,16 +1075,12 @@ app.post('/forum/:id/delete', requireAuth, async (req, res) => {
   }
 });
 
-// ============================================================
-// 4. RESTFUL CRUD API SERVICES (No Authentication Required)
-// ============================================================
-
-// TRAILS REST API
+// Trail API
 app.get('/api/trails', async (req, res) => {
   try {
     const filter = buildTrailFilter(req.query, null);
     const sortOption = buildSortOption(req.query.sort);
-    const trails = await Trail.find(filter).sort(sortOption).lean();
+    const trails = await Trail.find(filter).select('-bookmarkedBy').sort(sortOption).lean();
     return res.status(200).json({
       success: true,
       count: trails.length,
@@ -1047,7 +1096,7 @@ app.get('/api/trails/:id', async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ success: false, error: 'Invalid trail ID format' });
     }
-    const trail = await Trail.findById(req.params.id).lean();
+    const trail = await Trail.findById(req.params.id).select('-bookmarkedBy').lean();
     if (!trail) {
       return res.status(404).json({ success: false, error: 'Trail not found' });
     }
@@ -1084,18 +1133,10 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-app.post('/api/trails', async (req, res) => {
+app.post('/api/trails', requireApiWrite, async (req, res) => {
   try {
-    const body = { ...req.body };
-    if (body.gearChecklist) {
-      body.gearChecklist = parseListField(body.gearChecklist);
-    }
-    if (body.googleMapsUrl !== undefined) {
-      body.googleMapsUrl = sanitizeHttpUrl(body.googleMapsUrl);
-    }
-    if (!body.createdBy) {
-      body.createdBy = 'api-client';
-    }
+    const body = readTrailFields(req.body);
+    body.createdBy = req.session.user?.username || 'api-client';
     const created = await Trail.create(body);
     return res.status(201).json({
       success: true,
@@ -1107,24 +1148,27 @@ app.post('/api/trails', async (req, res) => {
   }
 });
 
-app.put('/api/trails/:id', async (req, res) => {
+app.put('/api/trails/:id', requireApiWrite, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ success: false, error: 'Invalid trail ID format' });
     }
-    const body = { ...req.body };
-    if (body.gearChecklist !== undefined) {
-      body.gearChecklist = parseListField(body.gearChecklist);
-    }
-    if (body.googleMapsUrl !== undefined) {
-      body.googleMapsUrl = sanitizeHttpUrl(body.googleMapsUrl);
-    }
-    const updated = await Trail.findByIdAndUpdate(req.params.id, body, {
-      new: true,
-      runValidators: true
-    });
-    if (!updated) {
+    const trail = await Trail.findById(req.params.id).select('createdBy').lean();
+    if (!trail) {
       return res.status(404).json({ success: false, error: 'Trail not found' });
+    }
+    if (!canManageApiRecord(req, trail.createdBy)) {
+      return res.status(403).json({ success: false, error: 'Only the trail author or an admin can edit this trail.' });
+    }
+    const fields = readTrailFields(req.body);
+    if (!Object.keys(fields).length) {
+      return res.status(400).json({ success: false, error: 'Send at least one trail field to update.' });
+    }
+    const updated = await updateTrail(req.params.id, fields).select('-bookmarkedBy');
+    if (!updated) {
+      return res.status(409).json({
+        success: false, error: 'Capacity cannot be lower than the number of hikers already signed up.'
+      });
     }
     return res.status(200).json({
       success: true,
@@ -1136,26 +1180,30 @@ app.put('/api/trails/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/trails/:id', async (req, res) => {
+app.delete('/api/trails/:id', requireApiWrite, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ success: false, error: 'Invalid trail ID format' });
     }
-    const deleted = await Trail.findByIdAndDelete(req.params.id);
-    if (!deleted) {
+    const trail = await Trail.findById(req.params.id).select('createdBy').lean();
+    if (!trail) {
       return res.status(404).json({ success: false, error: 'Trail not found' });
     }
+    if (!canManageApiRecord(req, trail.createdBy)) {
+      return res.status(403).json({ success: false, error: 'Only the trail author or an admin can delete this trail.' });
+    }
+    await Trail.deleteOne({ _id: trail._id });
     return res.status(200).json({
       success: true,
       message: 'Trail deleted successfully',
-      deletedId: deleted._id
+      deletedId: trail._id
     });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// FORUM REST API
+// Forum API
 app.get('/api/forum', async (req, res) => {
   try {
     const filter = buildForumFilter(req.query);
@@ -1166,15 +1214,12 @@ app.get('/api/forum', async (req, res) => {
   }
 });
 
-app.post('/api/forum', async (req, res) => {
+app.post('/api/forum', requireApiWrite, async (req, res) => {
   try {
     const body = {
-      title: req.body.title,
-      category: req.body.category || 'Trail Conditions',
-      relatedTrail: req.body.relatedTrail || 'General',
-      content: req.body.content,
-      author: req.body.author || 'api-client',
-      authorDisplayName: req.body.authorDisplayName || 'API Hiker'
+      ...readFields(req.body, FORUM_WRITE_FIELDS),
+      author: req.session.user?.username || 'api-client',
+      authorDisplayName: req.session.user?.displayName || 'API Hiker'
     };
     const created = await ForumPost.create(body);
     return res.status(201).json({ success: true, message: 'Forum post created', data: created });
@@ -1183,12 +1228,23 @@ app.post('/api/forum', async (req, res) => {
   }
 });
 
-app.put('/api/forum/:id', async (req, res) => {
+app.put('/api/forum/:id', requireApiWrite, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ success: false, error: 'Invalid post ID format' });
     }
-    const updated = await ForumPost.findByIdAndUpdate(req.params.id, req.body, {
+    const post = await ForumPost.findById(req.params.id).select('author').lean();
+    if (!post) {
+      return res.status(404).json({ success: false, error: 'Forum post not found' });
+    }
+    if (!canManageApiRecord(req, post.author)) {
+      return res.status(403).json({ success: false, error: 'Only the author or an admin can edit this post.' });
+    }
+    const fields = readFields(req.body, FORUM_WRITE_FIELDS);
+    if (!Object.keys(fields).length) {
+      return res.status(400).json({ success: false, error: 'Send at least one post field to update.' });
+    }
+    const updated = await ForumPost.findByIdAndUpdate(req.params.id, { $set: fields }, {
       new: true,
       runValidators: true
     });
@@ -1201,16 +1257,20 @@ app.put('/api/forum/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/forum/:id', async (req, res) => {
+app.delete('/api/forum/:id', requireApiWrite, async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ success: false, error: 'Invalid post ID format' });
     }
-    const deleted = await ForumPost.findByIdAndDelete(req.params.id);
-    if (!deleted) {
+    const post = await ForumPost.findById(req.params.id).select('author').lean();
+    if (!post) {
       return res.status(404).json({ success: false, error: 'Forum post not found' });
     }
-    return res.status(200).json({ success: true, message: 'Forum post deleted', deletedId: deleted._id });
+    if (!canManageApiRecord(req, post.author)) {
+      return res.status(403).json({ success: false, error: 'Only the author or an admin can delete this post.' });
+    }
+    await ForumPost.deleteOne({ _id: post._id });
+    return res.status(200).json({ success: true, message: 'Forum post deleted', deletedId: post._id });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -1225,11 +1285,15 @@ app.use((req, res) => {
 
 async function startServer() {
   try {
+    if (!DEMO_MODE && (process.env.SESSION_SECRET?.length || 0) < 32) {
+      throw new Error('Set SESSION_SECRET to a private value of at least 32 characters outside demo mode.');
+    }
     await mongoose.connect(MONGODB_URI);
-    console.log(`Connected to MongoDB: ${MONGODB_URI}`);
-    await seedInitialData();
-    app.listen(PORT, () => {
-      console.log(`TrailMate HK server running at http://localhost:${PORT}`);
+    console.log('Connected to MongoDB.');
+    if (DEMO_MODE) await seedInitialData();
+    app.listen(PORT, HOST, () => {
+      const address = HOST.includes(':') ? `[${HOST}]` : HOST;
+      console.log(`TrailMate HK listening at http://${address}:${PORT}`);
     });
   } catch (err) {
     console.error('Failed to start server:', err.message);
