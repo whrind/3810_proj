@@ -102,8 +102,8 @@
             <select id="trail" name="trail" class="form-control">
               <option value="">All Trails</option>
               <option value="General" <%= filters.trail === 'General' ? 'selected' : '' %>>General</option>
-              <% trailNames.forEach((tn) => { %>
-                <option value="<%= tn %>" <%= filters.trail === tn ? 'selected' : '' %>><%= tn %></option>
+              <% trailOptions.forEach(({ _id, trailName }) => { %>
+                <option value="<%= _id %>" <%= [String(_id), trailName].includes(filters.trail) ? 'selected' : '' %>><%= trailName %></option>
               <% }) %>
             </select>
           </div>
@@ -214,6 +214,7 @@
                   class="form-control"
                   placeholder="Write a reply..."
                   data-i18n-placeholder="forum_reply_ph"
+                  maxlength="600"
                   required
                 >
                 <button type="submit" class="btn btn-sky btn-sm" data-i18n="forum_btn_reply">Reply</button>
@@ -264,11 +265,11 @@
           </div>
 
           <div class="form-group">
-            <label for="relatedTrail" data-i18n="forum_lbl_trail">Related Trail</label>
-            <select id="relatedTrail" name="relatedTrail" class="form-control">
-              <option value="General">General</option>
-              <% trailNames.forEach((tn) => { %>
-                <option value="<%= tn %>"><%= tn %></option>
+            <label for="relatedTrailId" data-i18n="forum_lbl_trail">Related Trail</label>
+            <select id="relatedTrailId" name="relatedTrailId" class="form-control">
+              <option value="">General</option>
+              <% trailOptions.forEach(({ _id, trailName }) => { %>
+                <option value="<%= _id %>"><%= trailName %></option>
               <% }) %>
             </select>
           </div>

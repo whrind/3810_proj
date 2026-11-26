@@ -75,10 +75,10 @@ document.addEventListener('DOMContentLoaded', () => {
         fromInput.value = d;
         toInput.value = d;
       } else if (preset === '7d') {
-        fromInput.value = getHkTodayStr(-7);
+        fromInput.value = getHkTodayStr(-6);
         toInput.value = getHkTodayStr(0);
       } else if (preset === '30d') {
-        fromInput.value = getHkTodayStr(-30);
+        fromInput.value = getHkTodayStr(-29);
         toInput.value = getHkTodayStr(0);
       }
       const form = fromInput.closest('form');

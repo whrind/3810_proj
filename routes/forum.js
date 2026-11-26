@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const ForumPost = require('../models/ForumPost');
-const Trail = require('../models/Trail');
+const { listForumTrails, linkForumTrail, showCurrentTrailNames } = require('../config/forumTrails');
 const { requireAuth, canModify, setFlash } = require('../middleware/auth');
 const {
   FORUM_CATEGORIES,
@@ -16,14 +16,14 @@ router.use(requireAuth);
 
 router.get('/', async (req, res) => {
   try {
-    const filter = buildForumFilter(req.query);
+    const trailList = await listForumTrails();
+    const filter = buildForumFilter(req.query, trailList);
     const sortKey = req.query.sort || 'newest';
     const { page, limit, skip } = parsePagination(req.query, 6);
 
-    const [allMatched, allPosts, trailList] = await Promise.all([
+    const [allMatched, allPosts] = await Promise.all([
       ForumPost.find(filter).sort({ createdAt: sortKey === 'oldest' ? 1 : -1 }).lean(),
-      ForumPost.find({}, 'category likes comments').lean(),
-      Trail.find({}, 'trailName').sort({ trailName: 1 }).lean()
+      ForumPost.find({}, 'category likes comments').lean()
     ]);
 
     let sorted = allMatched;
@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
 
     const matchedCount = sorted.length;
     const totalPages = Math.max(1, Math.ceil(matchedCount / limit));
-    const posts = sorted.slice(skip, skip + limit);
+    const posts = showCurrentTrailNames(sorted.slice(skip, skip + limit), trailList);
 
     const categoryStats = FORUM_CATEGORIES.map((cat) => ({
       name: cat,
@@ -57,7 +57,7 @@ router.get('/', async (req, res) => {
       forumStats,
       totalPosts: allPosts.length,
       pagination: { page, limit, totalPages, matchedCount },
-      trailNames: trailList.map((t) => t.trailName),
+      trailOptions: trailList,
       filters: {
         q: req.query.q || '',
         category: req.query.category || '',
@@ -75,7 +75,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const payload = pickForumPayload(req.body, false);
+    const payload = await linkForumTrail(pickForumPayload(req.body, false), req.body.relatedTrailId);
     if (!payload.title || !payload.content) {
       setFlash(req, 'danger', 'Post title and content are required.');
       return res.redirect('/forum');
@@ -117,7 +117,7 @@ router.post('/:id/comment', async (req, res) => {
           }
         }
       },
-      { new: true }
+      { new: true, runValidators: true }
     );
     if (!updated) {
       setFlash(req, 'danger', 'Post not found.');
@@ -127,7 +127,8 @@ router.post('/:id/comment', async (req, res) => {
     return res.redirect(`/forum#post-${updated._id}`);
   } catch (err) {
     console.error('Comment error:', err);
-    return res.redirect('/forum');
+    setFlash(req, 'danger', err.name === 'ValidationError' ? err.message : 'Could not add reply.');
+    return res.redirect(`/forum#post-${req.params.id}`);
   }
 });
 

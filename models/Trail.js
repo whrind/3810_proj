@@ -86,7 +86,8 @@ const trailSchema = new mongoose.Schema(
       type: Number,
       default: 12,
       min: [1, 'Max participants must be at least 1'],
-      max: [100, 'Max participants cannot exceed 100']
+      max: [100, 'Max participants cannot exceed 100'],
+      validate: [Number.isInteger, 'Max participants must be a whole number']
     },
     participants: {
       type: [String],
@@ -128,5 +129,24 @@ trailSchema.index({
   busRoutes: 'text',
   description: 'text'
 });
+
+trailSchema.statics.updateDetails = async function updateDetails(id, changes) {
+  const filter = { _id: id };
+  const capacity = changes.maxParticipants;
+  if (Number.isInteger(capacity) && capacity >= 1 && capacity <= 100) {
+    filter.$expr = { $lte: [{ $size: { $ifNull: ['$participants', []] } }, capacity] };
+  }
+
+  const updated = await this.findOneAndUpdate(filter, changes, {
+    new: true,
+    runValidators: true
+  });
+  if (!updated && filter.$expr && await this.exists({ _id: id })) {
+    const error = new Error('Max participants cannot be lower than the current number of participants.');
+    error.statusCode = 409;
+    throw error;
+  }
+  return updated;
+};
 
 module.exports = mongoose.model('Trail', trailSchema);

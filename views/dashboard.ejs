@@ -254,11 +254,15 @@
 
               <div class="trail-card-footer">
                 <div class="card-btn-group">
-                  <form action="/trails/<%= trail._id %>/join" method="POST" style="display:inline;">
-                    <button type="submit" class="btn btn-sm <%= joined ? 'btn-secondary' : 'btn-gold' %>" data-i18n="<%= joined ? 'btn_leave' : 'btn_join' %>">
-                      <%= joined ? 'Leave Hike' : 'Join Hike' %>
-                    </button>
-                  </form>
+                  <% if (joined || trail.trailStatus !== 'Maintenance') { %>
+                    <form action="/trails/<%= trail._id %>/join" method="POST" style="display:inline;">
+                      <button type="submit" class="btn btn-sm <%= joined ? 'btn-secondary' : 'btn-gold' %>" data-i18n="<%= joined ? 'btn_leave' : 'btn_join' %>">
+                        <%= joined ? 'Leave Hike' : 'Join Hike' %>
+                      </button>
+                    </form>
+                  <% } else { %>
+                    <span class="badge badge-status-maintenance" data-i18n="form_trail_closed">RSVPs closed for maintenance</span>
+                  <% } %>
                   <form action="/trails/<%= trail._id %>/bookmark" method="POST" style="display:inline;">
                     <button type="submit" class="btn btn-sm <%= saved ? 'btn-emerald' : 'btn-secondary' %>" data-i18n="<%= saved ? 'btn_saved' : 'btn_save' %>">
                       <%= saved ? 'Saved' : 'Save' %>

@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const Trail = require('../models/Trail');
 const ForumPost = require('../models/ForumPost');
+const { listForumTrails, linkForumTrail, showCurrentTrailNames } = require('../config/forumTrails');
 const {
   pickTrailPayload,
   pickForumPayload,
@@ -82,10 +83,7 @@ router.put('/trails/:id', async (req, res) => {
     if (Object.keys(payload).length === 0) {
       return res.status(400).json({ success: false, error: 'No valid updatable fields provided' });
     }
-    const updated = await Trail.findByIdAndUpdate(req.params.id, payload, {
-      new: true,
-      runValidators: true
-    });
+    const updated = await Trail.updateDetails(req.params.id, payload);
     if (!updated) {
       return res.status(404).json({ success: false, error: 'Trail not found' });
     }
@@ -95,7 +93,7 @@ router.put('/trails/:id', async (req, res) => {
       data: updated
     });
   } catch (err) {
-    return res.status(400).json({ success: false, error: err.message });
+    return res.status(err.statusCode || 400).json({ success: false, error: err.message });
   }
 });
 
@@ -120,7 +118,8 @@ router.delete('/trails/:id', async (req, res) => {
 
 router.get('/forum', async (req, res) => {
   try {
-    const filter = buildForumFilter(req.query);
+    const trails = await listForumTrails();
+    const filter = buildForumFilter(req.query, trails);
     const hasPaging = req.query.page || req.query.limit;
 
     if (hasPaging) {
@@ -136,12 +135,12 @@ router.get('/forum', async (req, res) => {
         total,
         totalPages: Math.max(1, Math.ceil(total / limit)),
         count: posts.length,
-        data: posts
+        data: showCurrentTrailNames(posts, trails)
       });
     }
 
     const posts = await ForumPost.find(filter).sort({ createdAt: -1 }).lean();
-    return res.status(200).json({ success: true, count: posts.length, data: posts });
+    return res.status(200).json({ success: true, count: posts.length, data: showCurrentTrailNames(posts, trails) });
   } catch (err) {
     return res.status(500).json({ success: false, error: err.message });
   }
@@ -149,7 +148,7 @@ router.get('/forum', async (req, res) => {
 
 router.post('/forum', async (req, res) => {
   try {
-    const payload = pickForumPayload(req.body, false);
+    const payload = await linkForumTrail(pickForumPayload(req.body, false), req.body.relatedTrailId);
     const created = await ForumPost.create({
       ...payload,
       author: 'api-client',
@@ -166,7 +165,7 @@ router.put('/forum/:id', async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
       return res.status(400).json({ success: false, error: 'Invalid post ID format' });
     }
-    const payload = pickForumPayload(req.body, true);
+    const payload = await linkForumTrail(pickForumPayload(req.body, true), req.body.relatedTrailId);
     if (Object.keys(payload).length === 0) {
       return res.status(400).json({ success: false, error: 'No valid updatable fields provided' });
     }
@@ -177,7 +176,9 @@ router.put('/forum/:id', async (req, res) => {
     if (!updated) {
       return res.status(404).json({ success: false, error: 'Forum post not found' });
     }
-    return res.status(200).json({ success: true, message: 'Forum post updated', data: updated });
+    const trail = updated.relatedTrailId && await Trail.findById(updated.relatedTrailId, 'trailName').lean();
+    const [data] = showCurrentTrailNames([updated.toObject()], trail ? [trail] : []);
+    return res.status(200).json({ success: true, message: 'Forum post updated', data });
   } catch (err) {
     return res.status(400).json({ success: false, error: err.message });
   }

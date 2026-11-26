@@ -49,6 +49,12 @@ const forumPostSchema = new mongoose.Schema(
       trim: true,
       default: 'General'
     },
+    relatedTrailId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Trail',
+      default: null,
+      index: true
+    },
     content: {
       type: String,
       required: [true, 'Post content is required'],

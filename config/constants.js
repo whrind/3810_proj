@@ -146,7 +146,7 @@ function buildSortOption(sortKey) {
   }
 }
 
-function buildForumFilter(query) {
+function buildForumFilter(query, trails) {
   const filter = {};
   const keyword = query.q ? String(query.q).trim() : '';
   const category = query.category ? String(query.category).trim() : '';
@@ -162,9 +162,24 @@ function buildForumFilter(query) {
       { relatedTrail: regex },
       { authorDisplayName: regex }
     ];
+    const matchingIds = trails.filter(({ trailName }) => regex.test(trailName)).map(({ _id }) => _id);
+    if (matchingIds.length) filter.$or.push({ relatedTrailId: { $in: matchingIds } });
   }
   if (category && FORUM_CATEGORIES.includes(category)) filter.category = category;
-  if (trail && trail !== 'All') filter.relatedTrail = trail;
+  if (trail && trail !== 'All') {
+    const byId = trails.find(({ _id }) => String(_id) === trail);
+    const byName = trails.filter(({ trailName }) => trailName === trail).map(({ _id }) => _id);
+    if (byId) {
+      filter.relatedTrailId = byId._id;
+    } else if (byName.length) {
+      filter.$and = [{ $or: [
+        { relatedTrailId: { $in: byName } },
+        { relatedTrailId: null, relatedTrail: trail }
+      ] }];
+    } else {
+      filter.relatedTrail = trail;
+    }
+  }
 
   if (dateFrom || dateTo) {
     filter.createdAt = {};

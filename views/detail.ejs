@@ -135,11 +135,15 @@
           </span>
         </p>
 
-        <form action="/trails/<%= trail._id %>/join" method="POST">
-          <button type="submit" class="btn <%= joined ? 'btn-secondary' : 'btn-gold' %>" style="width:100%;" data-i18n="<%= joined ? 'btn_leave' : 'btn_join' %>">
-            <%= joined ? 'Leave Hike' : 'Join Hike' %>
-          </button>
-        </form>
+        <% if (joined || trail.trailStatus !== 'Maintenance') { %>
+          <form action="/trails/<%= trail._id %>/join" method="POST">
+            <button type="submit" class="btn <%= joined ? 'btn-secondary' : 'btn-gold' %>" style="width:100%;" data-i18n="<%= joined ? 'btn_leave' : 'btn_join' %>">
+              <%= joined ? 'Leave Hike' : 'Join Hike' %>
+            </button>
+          </form>
+        <% } else { %>
+          <p class="badge badge-status-maintenance" data-i18n="form_trail_closed">RSVPs closed for maintenance</p>
+        <% } %>
       </div>
 
       <div class="detail-section" style="margin-bottom:0;">

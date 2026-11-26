@@ -3,10 +3,10 @@
 <div class="container-narrow">
   <div class="workspace-header">
     <div>
-      <h1 class="glow-title" style="font-size:1.85rem;">Edit Trail</h1>
-      <p class="header-subtitle">Updating: <strong><%= trail.trailName %></strong></p>
+      <h1 class="glow-title" style="font-size:1.85rem;" data-i18n="form_trail_edit">Edit Trail</h1>
+      <p class="header-subtitle"><span data-i18n="form_trail_edit_intro">Updating:</span> <strong><%= trail.trailName %></strong></p>
     </div>
-    <a href="/trails/<%= trail._id %>" class="btn btn-secondary">&larr; Back to Detail</a>
+    <a href="/trails/<%= trail._id %>" class="btn btn-secondary" data-i18n="form_trail_back">&larr; Back to Detail</a>
   </div>
 
   <div class="panel">
@@ -19,14 +19,14 @@
     <form action="/trails/<%= trail._id %>/update" method="POST">
       <div class="form-grid">
         <div class="form-group">
-          <label for="trailName">Trail Name *</label>
+          <label for="trailName" data-i18n="form_trail_name">Trail Name *</label>
           <input type="text" id="trailName" name="trailName" class="form-control" value="<%= trail.trailName || '' %>" required>
         </div>
         <div class="form-group">
-          <label for="district">District *</label>
+          <label for="district" data-i18n="form_trail_district">District *</label>
           <select id="district" name="district" class="form-control" required>
             <% districts.forEach((d) => { %>
-              <option value="<%= d %>" <%= trail.district === d ? 'selected' : '' %>><%= d %></option>
+              <option value="<%= d %>" data-i18n="<%= d %>" <%= trail.district === d ? 'selected' : '' %>><%= d %></option>
             <% }) %>
           </select>
         </div>
@@ -34,98 +34,98 @@
 
       <div class="form-grid-3">
         <div class="form-group">
-          <label for="difficulty">Difficulty *</label>
+          <label for="difficulty" data-i18n="form_trail_difficulty">Difficulty *</label>
           <select id="difficulty" name="difficulty" class="form-control" required>
             <% difficulties.forEach((lvl) => { %>
-              <option value="<%= lvl %>" <%= trail.difficulty === lvl ? 'selected' : '' %>><%= lvl %></option>
+              <option value="<%= lvl %>" data-i18n="<%= lvl %>" <%= trail.difficulty === lvl ? 'selected' : '' %>><%= lvl %></option>
             <% }) %>
           </select>
         </div>
         <div class="form-group">
-          <label for="trailStatus">Trail Status</label>
+          <label for="trailStatus" data-i18n="form_trail_status">Trail Status</label>
           <select id="trailStatus" name="trailStatus" class="form-control">
             <% statuses.forEach((st) => { %>
-              <option value="<%= st %>" <%= trail.trailStatus === st ? 'selected' : '' %>><%= st %></option>
+              <option value="<%= st %>" data-i18n="<%= st %>" <%= trail.trailStatus === st ? 'selected' : '' %>><%= st %></option>
             <% }) %>
           </select>
         </div>
         <div class="form-group">
-          <label for="meetupDate">Meetup Date</label>
+          <label for="meetupDate" data-i18n="form_trail_date">Meetup Date</label>
           <input type="date" id="meetupDate" name="meetupDate" class="form-control" value="<%= trail.meetupDate || '' %>">
         </div>
       </div>
 
       <div class="form-grid-3">
         <div class="form-group">
-          <label for="distanceKm">Distance (km) *</label>
+          <label for="distanceKm" data-i18n="form_trail_distance">Distance (km) *</label>
           <input type="number" step="0.1" min="0.5" max="150" id="distanceKm" name="distanceKm" class="form-control" value="<%= trail.distanceKm %>" required>
         </div>
         <div class="form-group">
-          <label for="durationHrs">Duration (hours) *</label>
+          <label for="durationHrs" data-i18n="form_trail_duration">Duration (hours) *</label>
           <input type="number" step="0.5" min="0.5" max="48" id="durationHrs" name="durationHrs" class="form-control" value="<%= trail.durationHrs %>" required>
         </div>
         <div class="form-group">
-          <label for="elevationM">Elevation Gain (m)</label>
+          <label for="elevationM" data-i18n="form_trail_elevation">Elevation Gain (m)</label>
           <input type="number" min="0" id="elevationM" name="elevationM" class="form-control" value="<%= trail.elevationM || 0 %>">
         </div>
       </div>
 
       <div class="form-grid">
         <div class="form-group">
-          <label for="meetingPoint">Meeting Point *</label>
+          <label for="meetingPoint" data-i18n="form_trail_meeting">Meeting Point *</label>
           <input type="text" id="meetingPoint" name="meetingPoint" class="form-control" value="<%= trail.meetingPoint || '' %>" required>
         </div>
         <div class="form-group">
-          <label for="maxParticipants">Max Participants</label>
+          <label for="maxParticipants" data-i18n="form_trail_capacity">Max Participants</label>
           <input type="number" min="1" max="100" id="maxParticipants" name="maxParticipants" class="form-control" value="<%= trail.maxParticipants || 12 %>">
         </div>
       </div>
 
       <div class="form-grid">
         <div class="form-group">
-          <label for="nearestMtr">Nearest MTR Station &amp; Exit</label>
+          <label for="nearestMtr" data-i18n="form_trail_mtr">Nearest MTR Station &amp; Exit</label>
           <input type="text" id="nearestMtr" name="nearestMtr" class="form-control" value="<%= trail.nearestMtr || '' %>">
         </div>
         <div class="form-group">
-          <label for="busRoutes">Bus / Minibus / Ferry Route</label>
+          <label for="busRoutes" data-i18n="form_trail_bus">Bus / Minibus / Ferry Route</label>
           <input type="text" id="busRoutes" name="busRoutes" class="form-control" value="<%= trail.busRoutes || '' %>">
         </div>
       </div>
 
       <div class="form-grid">
         <div class="form-group">
-          <label for="returnTransport">Return Transport</label>
+          <label for="returnTransport" data-i18n="form_trail_return">Return Transport</label>
           <input type="text" id="returnTransport" name="returnTransport" class="form-control" value="<%= trail.returnTransport || '' %>">
         </div>
         <div class="form-group">
-          <label for="googleMapsUrl">Google Maps Trailhead URL</label>
+          <label for="googleMapsUrl" data-i18n="form_trail_maps">Google Maps Trailhead URL</label>
           <input type="url" id="googleMapsUrl" name="googleMapsUrl" class="form-control" value="<%= trail.googleMapsUrl || '' %>">
         </div>
       </div>
 
       <div class="form-group">
-        <label for="imageUrl">Cover Photo URL</label>
+        <label for="imageUrl" data-i18n="form_trail_image">Cover Photo URL</label>
         <input type="text" id="imageUrl" name="imageUrl" class="form-control" value="<%= trail.imageUrl || '' %>">
       </div>
 
       <div class="form-group">
-        <label for="gearChecklist">Recommended Gear (comma-separated)</label>
+        <label for="gearChecklist" data-i18n="form_trail_gear">Recommended Gear (comma-separated)</label>
         <input type="text" id="gearChecklist" name="gearChecklist" class="form-control" value="<%= Array.isArray(trail.gearChecklist) ? trail.gearChecklist.join(', ') : (trail.gearChecklist || '') %>">
       </div>
 
       <div class="form-group">
-        <label for="description">Trail Description *</label>
+        <label for="description" data-i18n="form_trail_description">Trail Description *</label>
         <textarea id="description" name="description" class="form-control" required><%= trail.description || '' %></textarea>
       </div>
 
       <div class="form-group">
-        <label for="safetyNotes">Safety Notes</label>
+        <label for="safetyNotes" data-i18n="form_trail_safety">Safety Notes</label>
         <textarea id="safetyNotes" name="safetyNotes" class="form-control" style="min-height:70px;"><%= trail.safetyNotes || '' %></textarea>
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-sky">Save Changes</button>
-        <a href="/trails/<%= trail._id %>" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-sky" data-i18n="form_trail_save">Save Changes</button>
+        <a href="/trails/<%= trail._id %>" class="btn btn-secondary" data-i18n="form_trail_cancel">Cancel</a>
       </div>
     </form>
   </div>

@@ -13,6 +13,7 @@ const {
   formatHkDate
 } = require('./config/constants');
 const { seedInitialData } = require('./config/seed');
+const { backfillForumTrailIds } = require('./config/forumTrails');
 const { canModify } = require('./middleware/auth');
 
 const authRoutes = require('./routes/auth');
@@ -78,6 +79,7 @@ async function startServer() {
     await mongoose.connect(MONGODB_URI);
     console.log(`Connected to MongoDB: ${MONGODB_URI}`);
     await seedInitialData();
+    await backfillForumTrailIds();
     app.listen(PORT, () => {
       console.log(`TrailMate HK running at http://localhost:${PORT}`);
     });

@@ -75,7 +75,7 @@ router.get('/new', (req, res) => {
 
 router.post('/', async (req, res) => {
   const payload = pickTrailPayload(req.body, false);
-  payload.participants = [req.session.user.username];
+  payload.participants = payload.trailStatus === 'Maintenance' ? [] : [req.session.user.username];
   payload.createdBy = req.session.user.username;
 
   try {
@@ -156,10 +156,11 @@ router.post('/:id/update', async (req, res) => {
     }
 
     const updateData = pickTrailPayload(req.body, false);
-    const updated = await Trail.findByIdAndUpdate(req.params.id, updateData, {
-      new: true,
-      runValidators: true
-    });
+    const updated = await Trail.updateDetails(req.params.id, updateData);
+    if (!updated) {
+      setFlash(req, 'danger', 'Trail not found.');
+      return res.redirect('/trails');
+    }
 
     setFlash(req, 'success', `Trail "${updated.trailName}" updated.`);
     return res.redirect(`/trails/${updated._id}`);
@@ -169,7 +170,7 @@ router.post('/:id/update', async (req, res) => {
       ...req.body,
       gearChecklist: parseListField(req.body.gearChecklist)
     };
-    return res.status(400).render('edit', {
+    return res.status(err.statusCode || 400).render('edit', {
       pageTitle: 'Edit Trail — TrailMate HK',
       trail: fallbackTrail,
       error: err.message || 'Update validation failed.'
@@ -197,7 +198,8 @@ router.post('/:id/join', async (req, res) => {
       {
         _id: req.params.id,
         participants: { $ne: uname },
-        $expr: { $lt: [{ $size: '$participants' }, '$maxParticipants'] }
+        trailStatus: { $ne: 'Maintenance' },
+        $expr: { $lt: [{ $size: { $ifNull: ['$participants', []] } }, '$maxParticipants'] }
       },
       { $addToSet: { participants: uname } },
       { new: true }
@@ -213,7 +215,10 @@ router.post('/:id/join', async (req, res) => {
       setFlash(req, 'danger', 'Trail not found.');
       return res.redirect('/trails');
     }
-    setFlash(req, 'warning', `Hike "${exists.trailName}" is already full.`);
+    const warning = exists.trailStatus === 'Maintenance'
+      ? 'This trail is under maintenance. New RSVPs are closed.'
+      : `Hike "${exists.trailName}" is already full.`;
+    setFlash(req, 'warning', warning);
     return res.redirect(req.get('Referer') || `/trails/${exists._id}`);
   } catch (err) {
     console.error('Join/leave error:', err);
