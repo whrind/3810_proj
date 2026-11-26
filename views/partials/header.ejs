@@ -1,39 +1,74 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title><%= pageTitle || 'TrailMate HK' %></title>
+  <script>
+    (function () {
+      var t = localStorage.getItem('trailmate_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
   <header class="navbar">
-    <div class="container navbar-inner">
+    <div class="navbar-inner">
       <a href="<%= currentUser ? '/trails' : '/login' %>" class="brand">
+        <span class="brand-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3l4 8 5-5 5 15H2L8 3z"/>
+          </svg>
+        </span>
         <span>TrailMate HK</span>
-        <span class="brand-badge">COMP 3810SEF</span>
       </a>
+
       <nav class="nav-links">
         <% if (currentUser) { %>
-          <a href="/trails" class="nav-link">Explore Trails</a>
-          <a href="/trails/new" class="nav-link">+ Add Trail</a>
-          <a href="/api/trails" class="nav-link" target="_blank">REST API</a>
-          <div class="nav-user">
-            <span>Hi, <strong><%= currentUser.displayName %></strong></span>
-            <form action="/logout" method="POST" style="display:inline;">
-              <button type="submit" class="btn btn-outline-light">Log Out</button>
-            </form>
-          </div>
+          <a href="/trails" class="nav-link <%= currentPath === '/trails' ? 'active' : '' %>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+            <span data-i18n="nav_tracker">Trail Tracker</span>
+          </a>
+          <a href="/forum" class="nav-link <%= currentPath.startsWith('/forum') ? 'active' : '' %>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span data-i18n="nav_forum">Hiking Forum</span>
+          </a>
+          <a href="/trails/new" class="nav-link <%= currentPath === '/trails/new' ? 'active' : '' %>">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+            <span data-i18n="nav_add">Add Trail</span>
+          </a>
+          <a href="/api/trails" class="nav-link" target="_blank">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+            <span data-i18n="nav_api">REST API</span>
+          </a>
         <% } else { %>
-          <a href="/login" class="nav-link">Sign In</a>
-          <a href="/register" class="nav-link">Register</a>
-          <a href="/api/trails" class="nav-link" target="_blank">REST API</a>
+          <a href="/login" class="nav-link <%= currentPath === '/login' ? 'active' : '' %>" data-i18n="nav_signin">Sign In</a>
+          <a href="/register" class="nav-link <%= currentPath === '/register' ? 'active' : '' %>" data-i18n="nav_register">Register</a>
+          <a href="/api/trails" class="nav-link" target="_blank" data-i18n="nav_api">REST API</a>
         <% } %>
+
+        <div class="nav-controls">
+          <select id="langSelect" class="lang-select" aria-label="Language">
+            <option value="en">EN</option>
+            <option value="zh-HK">繁體中文</option>
+            <option value="zh-CN">简体中文</option>
+          </select>
+
+          <button type="button" id="themeToggleBtn" class="theme-btn" aria-label="Toggle dark or light theme"></button>
+
+          <% if (currentUser) { %>
+            <span class="user-pill">@<%= currentUser.username %></span>
+            <form action="/logout" method="POST" style="display:inline;">
+              <button type="submit" class="btn btn-secondary btn-sm" data-i18n="nav_logout">Log Out</button>
+            </form>
+          <% } %>
+        </div>
       </nav>
     </div>
   </header>
 
-  <main class="container">
+  <main>
     <% if (flash) { %>
       <div class="flash flash-<%= flash.type %>">
         <span><%= flash.message %></span>

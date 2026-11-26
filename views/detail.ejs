@@ -1,7 +1,7 @@
 <%- include('partials/header') %>
 
 <%
-  const diffClass = 'badge-' + trail.difficulty.toLowerCase();
+  const diffSlug = trail.difficulty.toLowerCase();
   const statusClass =
     trail.trailStatus === 'Open'
       ? 'badge-status-open'
@@ -9,103 +9,148 @@
       ? 'badge-status-maintenance'
       : 'badge-status-caution';
   const joined = trail.participants && trail.participants.includes(currentUser.username);
+  const saved = trail.bookmarkedBy && trail.bookmarkedBy.includes(currentUser.username);
 %>
 
-<div class="page-header">
-  <div>
-    <div class="trail-badges" style="margin-bottom:8px;">
-      <span class="badge <%= diffClass %>"><%= trail.difficulty %></span>
-      <span class="badge <%= statusClass %>"><%= trail.trailStatus %></span>
-      <span class="badge" style="background:var(--surface-alt); color:var(--text);"><%= trail.district %></span>
-    </div>
-    <h1><%= trail.trailName %></h1>
-    <p>Created by <strong><%= trail.createdBy %></strong> &middot; Trail ID: <code><%= trail._id %></code></p>
-  </div>
-  <div class="card-btn-group">
-    <a href="/trails" class="btn btn-secondary">&larr; All Trails</a>
-    <a href="/trails/<%= trail._id %>/edit" class="btn btn-primary">Edit Trail</a>
-    <form
-      action="/trails/<%= trail._id %>/delete"
-      method="POST"
-      style="display:inline;"
-      data-confirm="Permanently delete '<%= trail.trailName %>'?"
-    >
-      <button type="submit" class="btn btn-danger">Delete</button>
-    </form>
-  </div>
-</div>
-
-<div class="detail-grid">
-  <div class="card">
-    <div class="trail-metrics" style="margin-bottom:22px;">
-      <div>
-        <div class="metric-val" style="font-size:1.25rem;"><%= trail.distanceKm %> km</div>
-        <div class="metric-lbl">Distance</div>
+<div class="container-narrow">
+  <div class="workspace-header">
+    <div>
+      <div class="trail-badges" style="margin-bottom:10px;">
+        <span class="badge badge-<%= diffSlug %>" data-i18n="<%= trail.difficulty %>"><%= trail.difficulty %></span>
+        <span class="badge <%= statusClass %>" data-i18n="<%= trail.trailStatus %>"><%= trail.trailStatus %></span>
+        <span class="badge badge-neutral" data-i18n="<%= trail.district %>"><%= trail.district %></span>
       </div>
-      <div>
-        <div class="metric-val" style="font-size:1.25rem;"><%= trail.durationHrs %> hrs</div>
-        <div class="metric-lbl">Estimated Time</div>
-      </div>
-      <div>
-        <div class="metric-val" style="font-size:1.25rem;"><%= trail.elevationM %> m</div>
-        <div class="metric-lbl">Elevation Gain</div>
-      </div>
-    </div>
-
-    <div class="detail-section">
-      <h3>Route Overview</h3>
-      <p><%= trail.description %></p>
-    </div>
-
-    <div class="detail-section">
-      <h3>Safety &amp; Preparation Notes</h3>
-      <p><%= trail.safetyNotes || 'Standard hiking precautions apply.' %></p>
-    </div>
-
-    <div class="detail-section" style="margin-bottom:0;">
-      <h3>Recommended Gear Checklist</h3>
-      <% if (trail.gearChecklist && trail.gearChecklist.length > 0) { %>
-        <div class="chip-list">
-          <% trail.gearChecklist.forEach((item) => { %>
-            <span class="chip"><%= item %></span>
-          <% }) %>
-        </div>
-      <% } else { %>
-        <p style="color:var(--text-muted);">No specific gear items listed.</p>
-      <% } %>
-    </div>
-  </div>
-
-  <aside class="card" style="height:fit-content;">
-    <div class="detail-section">
-      <h3>Group Meetup Details</h3>
-      <p style="margin-bottom:8px;"><strong>Date:</strong> <%= trail.meetupDate || 'Flexible / Self-Guided' %></p>
-      <p style="margin-bottom:8px;"><strong>Meeting Point:</strong> <%= trail.meetingPoint %></p>
-      <p style="margin-bottom:14px;">
-        <strong>Capacity:</strong>
-        <%= trail.participants ? trail.participants.length : 0 %> / <%= trail.maxParticipants %> hikers
+      <h1 class="glow-title" style="font-size:1.85rem;"><%= trail.trailName %></h1>
+      <p class="header-subtitle">
+        Created by <strong><%= trail.createdBy %></strong> &middot;
+        ID: <code class="text-gold"><%= trail._id %></code>
       </p>
-
-      <form action="/trails/<%= trail._id %>/join" method="POST">
-        <button type="submit" class="btn <%= joined ? 'btn-secondary' : 'btn-accent' %>" style="width:100%;">
-          <%= joined ? 'Leave This Group Hike' : 'Join This Group Hike' %>
+    </div>
+    <div class="header-actions">
+      <a href="/trails" class="btn btn-secondary" data-i18n="btn_all_trails">&larr; All Trails</a>
+      <form action="/trails/<%= trail._id %>/bookmark" method="POST" style="display:inline;">
+        <button type="submit" class="btn <%= saved ? 'btn-emerald' : 'btn-secondary' %>" data-i18n="<%= saved ? 'btn_saved' : 'btn_save' %>">
+          <%= saved ? 'Saved' : 'Save' %>
         </button>
       </form>
+      <a href="/trails/<%= trail._id %>/edit" class="btn btn-sky" data-i18n="btn_edit">Edit</a>
+      <form
+        action="/trails/<%= trail._id %>/delete"
+        method="POST"
+        style="display:inline;"
+        data-confirm="Permanently delete '<%= trail.trailName %>'?"
+      >
+        <button type="submit" class="btn btn-danger" data-i18n="btn_delete">Delete</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    <div class="panel">
+      <div class="trail-metrics" style="margin-bottom:20px;">
+        <div>
+          <div class="metric-val" style="font-size:1.25rem;"><%= trail.distanceKm %> km</div>
+          <div class="metric-lbl" data-i18n="lbl_distance">Distance</div>
+        </div>
+        <div>
+          <div class="metric-val text-violet" style="font-size:1.25rem;"><%= trail.durationHrs %> hrs</div>
+          <div class="metric-lbl" data-i18n="lbl_duration">Duration</div>
+        </div>
+        <div>
+          <div class="metric-val text-sky" style="font-size:1.25rem;"><%= trail.elevationM %> m</div>
+          <div class="metric-lbl" data-i18n="lbl_elevation">Elevation</div>
+        </div>
+      </div>
+
+      <!-- Real HK Transport Section -->
+      <div class="transport-box">
+        <h3 style="font-size:0.93rem; color:var(--sky); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:10px;" data-i18n="detail_transport">
+          Getting There (Real HK Transport &amp; Map)
+        </h3>
+        <div class="transport-row">
+          <strong data-i18n="lbl_mtr">MTR:</strong>
+          <%= trail.nearestMtr || 'See meeting point details' %>
+        </div>
+        <div class="transport-row">
+          <strong data-i18n="lbl_bus">Bus/Ferry:</strong>
+          <%= trail.busRoutes || 'Check local KMB / Citybus / NLB / Ferry timetable' %>
+        </div>
+        <% if (trail.returnTransport) { %>
+          <div class="transport-row">
+            <strong data-i18n="lbl_return">Return:</strong>
+            <%= trail.returnTransport %>
+          </div>
+        <% } %>
+        <% if (trail.googleMapsUrl) { %>
+          <div style="margin-top:12px;">
+            <a href="<%= trail.googleMapsUrl %>" target="_blank" rel="noopener" class="btn btn-sky btn-sm" data-i18n="btn_open_gmaps">
+              Open Trailhead in Google Maps ↗
+            </a>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="detail-section">
+        <h3 data-i18n="detail_overview">Route Overview</h3>
+        <p style="color:var(--text-body);"><%= trail.description %></p>
+      </div>
+
+      <div class="detail-section">
+        <h3 data-i18n="detail_safety">Safety &amp; Preparation Notes</h3>
+        <p style="color:var(--text-body);"><%= trail.safetyNotes || 'Standard hiking precautions apply.' %></p>
+      </div>
+
+      <div class="detail-section" style="margin-bottom:0;">
+        <h3 data-i18n="detail_gear">Recommended Gear Checklist</h3>
+        <% if (trail.gearChecklist && trail.gearChecklist.length > 0) { %>
+          <div class="chip-list">
+            <% trail.gearChecklist.forEach((item) => { %>
+              <span class="chip"><%= item %></span>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <p style="color:var(--text-muted);">No specific gear items listed.</p>
+        <% } %>
+      </div>
     </div>
 
-    <div class="detail-section" style="margin-bottom:0;">
-      <h3>Registered Hikers</h3>
-      <% if (trail.participants && trail.participants.length > 0) { %>
-        <div class="chip-list">
-          <% trail.participants.forEach((member) => { %>
-            <span class="chip">@<%= member %></span>
-          <% }) %>
-        </div>
-      <% } else { %>
-        <p style="color:var(--text-muted); font-size:0.9rem;">Be the first to join this hike!</p>
-      <% } %>
-    </div>
-  </aside>
+    <aside class="panel" style="height:fit-content;">
+      <div class="detail-section">
+        <h3 data-i18n="detail_meetup">Group Meetup</h3>
+        <p style="margin-bottom:8px; color:var(--text-body);">
+          <strong>Date:</strong> <%= trail.meetupDate || 'Flexible / Self-Guided' %>
+        </p>
+        <p style="margin-bottom:8px; color:var(--text-body);">
+          <strong>Meeting Point:</strong> <%= trail.meetingPoint %>
+        </p>
+        <p style="margin-bottom:16px; color:var(--text-body);">
+          <strong>Capacity:</strong>
+          <span class="text-gold" style="font-weight:700;">
+            <%= trail.participants ? trail.participants.length : 0 %> / <%= trail.maxParticipants %>
+          </span> hikers
+        </p>
+
+        <form action="/trails/<%= trail._id %>/join" method="POST">
+          <button type="submit" class="btn <%= joined ? 'btn-secondary' : 'btn-gold' %>" style="width:100%;" data-i18n="<%= joined ? 'btn_leave' : 'btn_join' %>">
+            <%= joined ? 'Leave Hike' : 'Join Hike' %>
+          </button>
+        </form>
+      </div>
+
+      <div class="detail-section" style="margin-bottom:0;">
+        <h3 data-i18n="detail_hikers">Registered Hikers</h3>
+        <% if (trail.participants && trail.participants.length > 0) { %>
+          <div class="chip-list">
+            <% trail.participants.forEach((member) => { %>
+              <span class="chip">@<%= member %></span>
+            <% }) %>
+          </div>
+        <% } else { %>
+          <p style="color:var(--text-muted); font-size:0.88rem;">Be the first to join this hike!</p>
+        <% } %>
+      </div>
+    </aside>
+  </div>
 </div>
 
 <%- include('partials/footer') %>

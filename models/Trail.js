@@ -55,7 +55,27 @@ const trailSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Meeting point is required'],
       trim: true,
-      maxlength: [120, 'Meeting point cannot exceed 120 characters']
+      maxlength: [140, 'Meeting point cannot exceed 140 characters']
+    },
+    nearestMtr: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    busRoutes: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    returnTransport: {
+      type: String,
+      trim: true,
+      default: ''
+    },
+    googleMapsUrl: {
+      type: String,
+      trim: true,
+      default: ''
     },
     maxParticipants: {
       type: Number,
@@ -64,6 +84,10 @@ const trailSchema = new mongoose.Schema(
       max: [100, 'Max participants cannot exceed 100']
     },
     participants: {
+      type: [String],
+      default: []
+    },
+    bookmarkedBy: {
       type: [String],
       default: []
     },
@@ -92,6 +116,12 @@ const trailSchema = new mongoose.Schema(
   }
 );
 
-trailSchema.index({ trailName: 'text', meetingPoint: 'text', description: 'text' });
+trailSchema.index({
+  trailName: 'text',
+  meetingPoint: 'text',
+  nearestMtr: 'text',
+  busRoutes: 'text',
+  description: 'text'
+});
 
 module.exports = mongoose.model('Trail', trailSchema);

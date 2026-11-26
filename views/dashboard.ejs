@@ -1,190 +1,302 @@
 <%- include('partials/header') %>
 
-<div class="page-header">
-  <div>
-    <h1>Hong Kong Trails &amp; Meetups</h1>
-    <p>Discover routes, filter by conditions, organize group hikes, and manage trail records.</p>
-  </div>
-  <a href="/trails/new" class="btn btn-primary">+ Create New Trail</a>
-</div>
+<div class="app-shell">
+  <!-- Left Sidebar -->
+  <aside class="sidebar">
+    <a href="/trails" class="sidebar-all-btn <%= !filters.district && filters.saved !== '1' ? 'active' : '' %>">
+      <span style="display:inline-flex; align-items:center; gap:9px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+        <span data-i18n="sidebar_all_hk">All Hong Kong Stats</span>
+      </span>
+      <span class="badge badge-neutral"><%= stats.totalCount %></span>
+    </a>
 
-<section class="stats-grid">
-  <div class="stat-card">
-    <div class="stat-label">Total Trails</div>
-    <div class="stat-value"><%= stats.totalCount %></div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Open Status</div>
-    <div class="stat-value"><%= stats.openCount %></div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Combined Distance</div>
-    <div class="stat-value"><%= stats.totalDistance %> km</div>
-  </div>
-  <div class="stat-card">
-    <div class="stat-label">Active Hike RSVPs</div>
-    <div class="stat-value"><%= stats.totalRsvps %></div>
-  </div>
-</section>
+    <a href="/trails?saved=1" class="sidebar-all-btn <%= filters.saved === '1' ? 'active' : '' %>">
+      <span style="display:inline-flex; align-items:center; gap:9px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+        <span data-i18n="sidebar_saved">My Saved Trails</span>
+      </span>
+      <span class="badge badge-challenging"><%= stats.savedCount %></span>
+    </a>
 
-<section class="filter-card">
-  <form action="/trails" method="GET">
-    <div class="filter-grid">
-      <div>
-        <label for="q" style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Keyword Search</label>
-        <input
-          type="text"
-          id="q"
-          name="q"
-          class="form-control"
-          value="<%= filters.q %>"
-          placeholder="Trail name, MTR point, gear..."
-        >
-      </div>
-
-      <div>
-        <label for="district" style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">District</label>
-        <select id="district" name="district" class="form-control">
-          <option value="">All Districts</option>
-          <% districts.forEach((d) => { %>
-            <option value="<%= d %>" <%= filters.district === d ? 'selected' : '' %>><%= d %></option>
-          <% }) %>
-        </select>
-      </div>
-
-      <div>
-        <label for="difficulty" style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Difficulty</label>
-        <select id="difficulty" name="difficulty" class="form-control">
-          <option value="">All Levels</option>
-          <% difficulties.forEach((lvl) => { %>
-            <option value="<%= lvl %>" <%= filters.difficulty === lvl ? 'selected' : '' %>><%= lvl %></option>
-          <% }) %>
-        </select>
-      </div>
-
-      <div>
-        <label for="status" style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Status</label>
-        <select id="status" name="status" class="form-control">
-          <option value="">All Statuses</option>
-          <% statuses.forEach((st) => { %>
-            <option value="<%= st %>" <%= filters.status === st ? 'selected' : '' %>><%= st %></option>
-          <% }) %>
-        </select>
-      </div>
-
-      <div>
-        <label for="maxDistance" style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Max Distance (km)</label>
-        <input
-          type="number"
-          step="0.5"
-          min="1"
-          id="maxDistance"
-          name="maxDistance"
-          class="form-control"
-          value="<%= filters.maxDistance %>"
-          placeholder="e.g. 10"
-        >
-      </div>
-
-      <div>
-        <label for="sort" style="font-size:0.8rem; font-weight:600; display:block; margin-bottom:4px;">Sort By</label>
-        <select id="sort" name="sort" class="form-control">
-          <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Newest Added</option>
-          <option value="distance_asc" <%= filters.sort === 'distance_asc' ? 'selected' : '' %>>Shortest Distance</option>
-          <option value="distance_desc" <%= filters.sort === 'distance_desc' ? 'selected' : '' %>>Longest Distance</option>
-          <option value="elevation_desc" <%= filters.sort === 'elevation_desc' ? 'selected' : '' %>>Highest Elevation</option>
-          <option value="meetup_asc" <%= filters.sort === 'meetup_asc' ? 'selected' : '' %>>Soonest Meetup</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="filter-actions">
-      <a href="/trails" class="btn btn-secondary btn-sm">Reset Filters</a>
-      <button type="submit" class="btn btn-primary btn-sm">Search &amp; Filter</button>
-    </div>
-  </form>
-</section>
-
-<% if (trails.length === 0) { %>
-  <div class="empty-state">
-    <h3>No matching trails found</h3>
-    <p>Try adjusting your search conditions or add a new hiking trail to the hub.</p>
-    <a href="/trails/new" class="btn btn-primary">+ Add First Matching Trail</a>
-  </div>
-<% } else { %>
-  <p style="margin-bottom:14px; font-size:0.9rem; color:var(--text-muted);">
-    Showing <strong><%= trails.length %></strong> trail<%= trails.length === 1 ? '' : 's' %>
-  </p>
-
-  <section class="trail-grid">
-    <% trails.forEach((trail) => { %>
-      <%
-        const diffClass = 'badge-' + trail.difficulty.toLowerCase();
-        const statusClass =
-          trail.trailStatus === 'Open'
-            ? 'badge-status-open'
-            : trail.trailStatus === 'Maintenance'
-            ? 'badge-status-maintenance'
-            : 'badge-status-caution';
-        const joined = trail.participants && trail.participants.includes(currentUser.username);
-      %>
-      <article class="trail-card">
-        <div>
-          <div class="trail-badges">
-            <span class="badge <%= diffClass %>"><%= trail.difficulty %></span>
-            <span class="badge <%= statusClass %>"><%= trail.trailStatus %></span>
-          </div>
-
-          <h2 class="trail-title">
-            <a href="/trails/<%= trail._id %>"><%= trail.trailName %></a>
-          </h2>
-          <div class="trail-district"><%= trail.district %> &middot; <%= trail.meetingPoint %></div>
-          <p class="trail-desc"><%= trail.description %></p>
-
-          <div class="trail-metrics">
-            <div>
-              <div class="metric-val"><%= trail.distanceKm %> km</div>
-              <div class="metric-lbl">Distance</div>
-            </div>
-            <div>
-              <div class="metric-val"><%= trail.durationHrs %> hrs</div>
-              <div class="metric-lbl">Duration</div>
-            </div>
-            <div>
-              <div class="metric-val"><%= trail.elevationM %> m</div>
-              <div class="metric-lbl">Elevation</div>
-            </div>
-          </div>
-
-          <div class="trail-meta">
-            <strong>Meetup:</strong> <%= trail.meetupDate || 'Flexible' %> &nbsp;|&nbsp;
-            <strong>Hikers:</strong> <%= trail.participants ? trail.participants.length : 0 %> / <%= trail.maxParticipants %>
-          </div>
+    <% districtStats.forEach((d) => { %>
+      <a
+        href="/trails?district=<%= encodeURIComponent(d.name) %>"
+        class="sidebar-card <%= filters.district === d.name ? 'active' : '' %>"
+      >
+        <div class="sidebar-card-title">
+          <span data-i18n="<%= d.name %>"><%= d.name %></span>
         </div>
-
-        <div class="trail-card-footer">
-          <form action="/trails/<%= trail._id %>/join" method="POST" style="display:inline;">
-            <button type="submit" class="btn btn-sm <%= joined ? 'btn-secondary' : 'btn-accent' %>">
-              <%= joined ? 'Leave Hike' : 'Join Hike' %>
-            </button>
-          </form>
-
-          <div class="card-btn-group">
-            <a href="/trails/<%= trail._id %>" class="btn btn-secondary btn-sm">View</a>
-            <a href="/trails/<%= trail._id %>/edit" class="btn btn-primary btn-sm">Edit</a>
-            <form
-              action="/trails/<%= trail._id %>/delete"
-              method="POST"
-              style="display:inline;"
-              data-confirm="Delete '<%= trail.trailName %>'? This cannot be undone."
-            >
-              <button type="submit" class="btn btn-danger btn-sm">Delete</button>
-            </form>
-          </div>
+        <div class="sidebar-row sidebar-row-gold">
+          <span data-i18n="sidebar_distance">Total Distance</span>
+          <span><%= d.totalKm %> km</span>
         </div>
-      </article>
+        <div class="sidebar-row sidebar-row-violet">
+          <span data-i18n="sidebar_open">Open Trails</span>
+          <span><%= d.open %> / <%= d.count %></span>
+        </div>
+        <div class="sidebar-row-link">
+          <span data-i18n="sidebar_filter_link">Click to filter</span>
+          <span>&gt;&gt;&gt;</span>
+        </div>
+      </a>
     <% }) %>
+
+    <div class="hko-box">
+      <strong data-i18n="hko_title">HK Hiking Safety &amp; Weather</strong>
+      <div class="hko-links">
+        <a href="https://www.hko.gov.hk/en/wxinfo/dailywx/wxwarntoday.htm" target="_blank" rel="noopener" data-i18n="hko_weather">HKO Weather Warnings ↗</a>
+        <a href="https://www.hiking.gov.hk/" target="_blank" rel="noopener" data-i18n="hko_afcd">AFCD Country Parks ↗</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Workspace -->
+  <section>
+    <div class="workspace-header">
+      <div>
+        <h1 class="glow-title" data-i18n="dash_title">Trail Tracker</h1>
+        <p class="header-subtitle" data-i18n="dash_subtitle">Hong Kong hiking routes, real MTR/bus transport &amp; group meetups</p>
+      </div>
+      <div class="header-actions">
+        <a href="/forum" class="btn btn-secondary" data-i18n="nav_forum">Hiking Forum</a>
+        <a href="/api/trails" target="_blank" class="btn btn-sky" data-i18n="btn_json_api">JSON API</a>
+        <a href="/trails/new" class="btn btn-emerald" data-i18n="btn_add_trail">+ Add Trail</a>
+      </div>
+    </div>
+
+    <!-- Hub Overview Stats Panel -->
+    <div class="panel stats-panel">
+      <div class="stats-panel-title" data-i18n="stats_heading">Hub Overview Stats</div>
+      <div class="stats-2col">
+        <div class="stat-row">
+          <div>
+            <div class="stat-row-title" data-i18n="stat_total">Total Trails</div>
+            <div class="stat-row-sub" data-i18n="stat_total_sub">Tracked across 5 HK districts</div>
+          </div>
+          <div class="stat-row-num">
+            <div class="stat-tag text-sky" data-i18n="stat_active">Active</div>
+            <div class="stat-big"><%= stats.totalCount %></div>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <div>
+            <div class="stat-row-title text-gold" data-i18n="stat_dist">Combined Distance</div>
+            <div class="stat-row-sub" data-i18n="stat_dist_sub">Total mapped route length</div>
+          </div>
+          <div class="stat-row-num">
+            <div class="stat-tag text-gold" data-i18n="stat_km">Kilometers</div>
+            <div class="stat-big text-gold"><%= stats.totalDistance %> km</div>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <div>
+            <div class="stat-row-title text-emerald" data-i18n="stat_open">Open Trail Status</div>
+            <div class="stat-row-sub" data-i18n="stat_open_sub">Clear &amp; ready for hiking</div>
+          </div>
+          <div class="stat-row-num">
+            <div class="stat-tag text-emerald" data-i18n="stat_avail">Available</div>
+            <div class="stat-big text-emerald"><%= stats.openCount %> / <%= stats.totalCount %></div>
+          </div>
+        </div>
+
+        <div class="stat-row">
+          <div>
+            <div class="stat-row-title text-violet" data-i18n="stat_rsvp">Group Hike RSVPs</div>
+            <div class="stat-row-sub" data-i18n="stat_rsvp_sub">Total hikers signed up</div>
+          </div>
+          <div class="stat-row-num">
+            <div class="stat-tag text-violet" data-i18n="stat_joined">Joined</div>
+            <div class="stat-big text-violet"><%= stats.totalRsvps %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Multi-Condition Search & Filter Panel -->
+    <div class="panel filter-panel">
+      <form action="/trails" method="GET">
+        <% if (filters.district) { %>
+          <input type="hidden" name="district" value="<%= filters.district %>">
+        <% } %>
+        <% if (filters.saved === '1') { %>
+          <input type="hidden" name="saved" value="1">
+        <% } %>
+        <div class="filter-grid">
+          <div>
+            <label for="q" class="filter-label" data-i18n="lbl_keyword">Keyword Search</label>
+            <input
+              type="text"
+              id="q"
+              name="q"
+              class="form-control"
+              value="<%= filters.q %>"
+              placeholder="Trail name, MTR, bus, gear..."
+              data-i18n-placeholder="ph_keyword"
+            >
+          </div>
+
+          <div>
+            <label for="difficulty" class="filter-label" data-i18n="lbl_difficulty">Difficulty</label>
+            <select id="difficulty" name="difficulty" class="form-control">
+              <option value="" data-i18n="opt_all_levels">All Levels</option>
+              <% difficulties.forEach((lvl) => { %>
+                <option value="<%= lvl %>" <%= filters.difficulty === lvl ? 'selected' : '' %> data-i18n="<%= lvl %>"><%= lvl %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="status" class="filter-label" data-i18n="lbl_status">Status</label>
+            <select id="status" name="status" class="form-control">
+              <option value="" data-i18n="opt_all_statuses">All Statuses</option>
+              <% statuses.forEach((st) => { %>
+                <option value="<%= st %>" <%= filters.status === st ? 'selected' : '' %> data-i18n="<%= st %>"><%= st %></option>
+              <% }) %>
+            </select>
+          </div>
+
+          <div>
+            <label for="maxDistance" class="filter-label" data-i18n="lbl_max_km">Max km</label>
+            <input
+              type="number"
+              step="0.5"
+              min="1"
+              id="maxDistance"
+              name="maxDistance"
+              class="form-control"
+              value="<%= filters.maxDistance %>"
+              placeholder="e.g. 10"
+            >
+          </div>
+
+          <div>
+            <label for="sort" class="filter-label" data-i18n="lbl_sort">Sort By</label>
+            <select id="sort" name="sort" class="form-control">
+              <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %> data-i18n="sort_newest">Newest Added</option>
+              <option value="distance_asc" <%= filters.sort === 'distance_asc' ? 'selected' : '' %> data-i18n="sort_dist_asc">Shortest First</option>
+              <option value="distance_desc" <%= filters.sort === 'distance_desc' ? 'selected' : '' %> data-i18n="sort_dist_desc">Longest First</option>
+              <option value="elevation_desc" <%= filters.sort === 'elevation_desc' ? 'selected' : '' %> data-i18n="sort_elev_desc">Highest Peak</option>
+              <option value="meetup_asc" <%= filters.sort === 'meetup_asc' ? 'selected' : '' %> data-i18n="sort_meetup_asc">Soonest Meetup</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <span style="font-size:0.84rem; color:var(--text-muted);">
+            <strong><%= trails.length %></strong> results
+          </span>
+          <div style="display:flex; gap:8px;">
+            <a href="/trails" class="btn btn-secondary btn-sm" data-i18n="btn_reset">Reset</a>
+            <button type="submit" class="btn btn-sky btn-sm" data-i18n="btn_search">Search &amp; Filter</button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Trail Cards -->
+    <% if (trails.length === 0) { %>
+      <div class="empty-state">
+        <h3>No matching trails found</h3>
+        <p>Try clearing one of your filters or create a new trail record.</p>
+        <a href="/trails/new" class="btn btn-emerald" data-i18n="btn_add_trail">+ Add Trail</a>
+      </div>
+    <% } else { %>
+      <div class="trail-grid">
+        <% trails.forEach((trail) => { %>
+          <%
+            const diffSlug = trail.difficulty.toLowerCase();
+            const statusClass =
+              trail.trailStatus === 'Open'
+                ? 'badge-status-open'
+                : trail.trailStatus === 'Maintenance'
+                ? 'badge-status-maintenance'
+                : 'badge-status-caution';
+            const joined = trail.participants && trail.participants.includes(currentUser.username);
+            const saved = trail.bookmarkedBy && trail.bookmarkedBy.includes(currentUser.username);
+          %>
+          <article class="trail-card diff-<%= diffSlug %>">
+            <div>
+              <div class="trail-badges">
+                <span class="badge badge-<%= diffSlug %>" data-i18n="<%= trail.difficulty %>"><%= trail.difficulty %></span>
+                <span class="badge <%= statusClass %>" data-i18n="<%= trail.trailStatus %>"><%= trail.trailStatus %></span>
+                <span class="badge badge-neutral" data-i18n="<%= trail.district %>"><%= trail.district %></span>
+              </div>
+
+              <h2 class="trail-title">
+                <a href="/trails/<%= trail._id %>"><%= trail.trailName %></a>
+              </h2>
+              <p class="trail-desc"><%= trail.description %></p>
+
+              <% if (trail.nearestMtr || trail.busRoutes) { %>
+                <div class="transport-mini">
+                  <% if (trail.nearestMtr) { %>
+                    <div><strong data-i18n="lbl_mtr">MTR:</strong> <%= trail.nearestMtr %></div>
+                  <% } %>
+                  <% if (trail.busRoutes) { %>
+                    <div><strong data-i18n="lbl_bus">Bus/Ferry:</strong> <%= trail.busRoutes %></div>
+                  <% } %>
+                </div>
+              <% } %>
+
+              <div class="trail-metrics">
+                <div>
+                  <div class="metric-val"><%= trail.distanceKm %> km</div>
+                  <div class="metric-lbl" data-i18n="lbl_distance">Distance</div>
+                </div>
+                <div>
+                  <div class="metric-val text-violet"><%= trail.durationHrs %> hrs</div>
+                  <div class="metric-lbl" data-i18n="lbl_duration">Duration</div>
+                </div>
+                <div>
+                  <div class="metric-val text-sky"><%= trail.elevationM %> m</div>
+                  <div class="metric-lbl" data-i18n="lbl_elevation">Elevation</div>
+                </div>
+              </div>
+
+              <div class="trail-meta">
+                <span>Meetup: <strong><%= trail.meetupDate || 'Flexible' %></strong></span>
+                <span>Hikers: <strong class="text-gold"><%= trail.participants ? trail.participants.length : 0 %> / <%= trail.maxParticipants %></strong></span>
+              </div>
+            </div>
+
+            <div class="trail-card-footer">
+              <div class="card-btn-group">
+                <form action="/trails/<%= trail._id %>/join" method="POST" style="display:inline;">
+                  <button type="submit" class="btn btn-sm <%= joined ? 'btn-secondary' : 'btn-gold' %>" data-i18n="<%= joined ? 'btn_leave' : 'btn_join' %>">
+                    <%= joined ? 'Leave Hike' : 'Join Hike' %>
+                  </button>
+                </form>
+                <form action="/trails/<%= trail._id %>/bookmark" method="POST" style="display:inline;">
+                  <button type="submit" class="btn btn-sm <%= saved ? 'btn-emerald' : 'btn-secondary' %>" data-i18n="<%= saved ? 'btn_saved' : 'btn_save' %>">
+                    <%= saved ? 'Saved' : 'Save' %>
+                  </button>
+                </form>
+              </div>
+
+              <div class="card-btn-group">
+                <% if (trail.googleMapsUrl) { %>
+                  <a href="<%= trail.googleMapsUrl %>" target="_blank" rel="noopener" class="btn btn-secondary btn-sm" data-i18n="btn_gmaps">Google Maps</a>
+                <% } %>
+                <a href="/trails/<%= trail._id %>" class="btn btn-secondary btn-sm" data-i18n="btn_view">View</a>
+                <a href="/trails/<%= trail._id %>/edit" class="btn btn-sky btn-sm" data-i18n="btn_edit">Edit</a>
+                <form
+                  action="/trails/<%= trail._id %>/delete"
+                  method="POST"
+                  style="display:inline;"
+                  data-confirm="Delete '<%= trail.trailName %>'? This cannot be undone."
+                >
+                  <button type="submit" class="btn btn-danger btn-sm" data-i18n="btn_delete">Delete</button>
+                </form>
+              </div>
+            </div>
+          </article>
+        <% }) %>
+      </div>
+    <% } %>
   </section>
-<% } %>
+</div>
 
 <%- include('partials/footer') %>
