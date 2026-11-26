@@ -15,6 +15,45 @@
   </div>
 </div>
 
+<%
+  const openRatio = stats.totalCount > 0 ? Math.round((stats.openCount / stats.totalCount) * 100) : 0;
+%>
+
+<section class="dashboard-panel" aria-label="Trail Dashboard">
+  <div class="dashboard-header">
+    <h2 class="dashboard-title" data-i18n="stats_heading">Hub Overview Stats</h2>
+  </div>
+
+  <div class="dashboard-kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-label" data-i18n="stat_total">Total Trails</div>
+      <div class="kpi-value"><%= stats.totalCount %></div>
+      <div class="kpi-sub" data-i18n="stat_total_sub">Tracked across 5 HK districts</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label" data-i18n="stat_dist">Combined Distance</div>
+      <div class="kpi-value"><%= stats.totalDistance %> km</div>
+      <div class="kpi-sub" data-i18n="stat_dist_sub">Total mapped route length</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label" data-i18n="stat_open">Open Trail Status</div>
+      <div class="kpi-value text-emerald"><%= stats.openCount %> / <%= stats.totalCount %></div>
+      <div class="kpi-progress" aria-hidden="true">
+        <div class="kpi-progress-bar" style="width:<%= openRatio %>%;"></div>
+      </div>
+      <div class="kpi-sub" data-i18n="stat_open_sub">Clear &amp; ready for hiking</div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-label" data-i18n="stat_rsvp">Group Hike RSVPs</div>
+      <div class="kpi-value"><%= stats.totalRsvps %></div>
+      <div class="kpi-sub" data-i18n="stat_rsvp_sub">Total hikers signed up</div>
+    </div>
+  </div>
+</section>
+
 <div class="app-shell">
   <aside class="sidebar">
     <a href="/trails" class="sidebar-all-btn <%= !filters.district && filters.saved !== '1' ? 'active' : '' %>">
@@ -66,55 +105,6 @@
   </aside>
 
   <section>
-    <div class="panel stats-panel">
-      <div class="stats-panel-title" data-i18n="stats_heading">Hub Overview Stats</div>
-      <div class="stats-2col">
-        <div class="stat-row">
-          <div>
-            <div class="stat-row-title" data-i18n="stat_total">Total Trails</div>
-            <div class="stat-row-sub" data-i18n="stat_total_sub">Tracked across 5 HK districts</div>
-          </div>
-          <div class="stat-row-num">
-            <div class="stat-tag text-sky" data-i18n="stat_active">Active</div>
-            <div class="stat-big"><%= stats.totalCount %></div>
-          </div>
-        </div>
-
-        <div class="stat-row">
-          <div>
-            <div class="stat-row-title text-gold" data-i18n="stat_dist">Combined Distance</div>
-            <div class="stat-row-sub" data-i18n="stat_dist_sub">Total mapped route length</div>
-          </div>
-          <div class="stat-row-num">
-            <div class="stat-tag text-gold" data-i18n="stat_km">Kilometers</div>
-            <div class="stat-big text-gold"><%= stats.totalDistance %> km</div>
-          </div>
-        </div>
-
-        <div class="stat-row">
-          <div>
-            <div class="stat-row-title text-emerald" data-i18n="stat_open">Open Trail Status</div>
-            <div class="stat-row-sub" data-i18n="stat_open_sub">Clear &amp; ready for hiking</div>
-          </div>
-          <div class="stat-row-num">
-            <div class="stat-tag text-emerald" data-i18n="stat_avail">Available</div>
-            <div class="stat-big text-emerald"><%= stats.openCount %> / <%= stats.totalCount %></div>
-          </div>
-        </div>
-
-        <div class="stat-row">
-          <div>
-            <div class="stat-row-title text-violet" data-i18n="stat_rsvp">Group Hike RSVPs</div>
-            <div class="stat-row-sub" data-i18n="stat_rsvp_sub">Total hikers signed up</div>
-          </div>
-          <div class="stat-row-num">
-            <div class="stat-tag text-violet" data-i18n="stat_joined">Joined</div>
-            <div class="stat-big text-violet"><%= stats.totalRsvps %></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="panel filter-panel">
       <form action="/trails" method="GET">
         <% if (filters.district) { %>
@@ -247,18 +237,18 @@
                     <div class="metric-lbl" data-i18n="lbl_distance">Distance</div>
                   </div>
                   <div>
-                    <div class="metric-val text-violet"><%= trail.durationHrs %> hrs</div>
+                    <div class="metric-val"><%= trail.durationHrs %> hrs</div>
                     <div class="metric-lbl" data-i18n="lbl_duration">Duration</div>
                   </div>
                   <div>
-                    <div class="metric-val text-sky"><%= trail.elevationM %> m</div>
+                    <div class="metric-val"><%= trail.elevationM %> m</div>
                     <div class="metric-lbl" data-i18n="lbl_elevation">Elevation</div>
                   </div>
                 </div>
 
                 <div class="trail-meta">
                   <span><span data-i18n="lbl_meetup">Meetup:</span> <strong><%= trail.meetupDate || 'Flexible' %></strong></span>
-                  <span><span data-i18n="lbl_hikers">Hikers:</span> <strong class="text-gold"><%= trail.participants ? trail.participants.length : 0 %> / <%= trail.maxParticipants %></strong></span>
+                  <span><span data-i18n="lbl_hikers">Hikers:</span> <strong><%= trail.participants ? trail.participants.length : 0 %> / <%= trail.maxParticipants %></strong></span>
                 </div>
               </div>
 

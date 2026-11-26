@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 
     const [allMatched, allPosts, trailList] = await Promise.all([
       ForumPost.find(filter).sort({ createdAt: sortKey === 'oldest' ? 1 : -1 }).lean(),
-      ForumPost.find({}, 'category').lean(),
+      ForumPost.find({}, 'category likes comments').lean(),
       Trail.find({}, 'trailName').sort({ trailName: 1 }).lean()
     ]);
 
@@ -42,10 +42,19 @@ router.get('/', async (req, res) => {
       count: allPosts.filter((p) => p.category === cat).length
     }));
 
+    const forumStats = {
+      totalPosts: allPosts.length,
+      totalReplies: allPosts.reduce((sum, p) => sum + (p.comments ? p.comments.length : 0), 0),
+      totalLikes: allPosts.reduce((sum, p) => sum + (p.likes ? p.likes.length : 0), 0),
+      activeCategories: categoryStats.filter((c) => c.count > 0).length,
+      totalCategories: FORUM_CATEGORIES.length
+    };
+
     return res.render('forum', {
       pageTitle: 'Hiking Forum — TrailMate HK',
       posts,
       categoryStats,
+      forumStats,
       totalPosts: allPosts.length,
       pagination: { page, limit, totalPages, matchedCount },
       trailNames: trailList.map((t) => t.trailName),
