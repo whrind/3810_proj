@@ -20,10 +20,10 @@
         <span class="badge <%= statusClass %>" data-i18n="<%= trail.trailStatus %>"><%= trail.trailStatus %></span>
         <span class="badge badge-neutral" data-i18n="<%= trail.district %>"><%= trail.district %></span>
       </div>
-      <h1 class="glow-title" style="font-size:1.85rem;"><%= trail.trailName %></h1>
+      <h1 class="page-title"><%= trail.trailName %></h1>
       <p class="header-subtitle">
         Created by <strong><%= trail.createdBy %></strong> &middot;
-        ID: <code class="text-gold"><%= trail._id %></code>
+        ID: <code><%= trail._id %></code>
       </p>
     </div>
     <div class="header-actions">
@@ -49,23 +49,23 @@
     <div class="panel">
       <div class="trail-metrics" style="margin-bottom:20px;">
         <div>
-          <div class="metric-val" style="font-size:1.25rem;"><%= trail.distanceKm %> km</div>
+          <div class="metric-val" style="font-size:1.2rem;"><%= trail.distanceKm %> km</div>
           <div class="metric-lbl" data-i18n="lbl_distance">Distance</div>
         </div>
         <div>
-          <div class="metric-val text-violet" style="font-size:1.25rem;"><%= trail.durationHrs %> hrs</div>
+          <div class="metric-val" style="font-size:1.2rem;"><%= trail.durationHrs %> hrs</div>
           <div class="metric-lbl" data-i18n="lbl_duration">Duration</div>
         </div>
         <div>
-          <div class="metric-val text-sky" style="font-size:1.25rem;"><%= trail.elevationM %> m</div>
+          <div class="metric-val" style="font-size:1.2rem;"><%= trail.elevationM %> m</div>
           <div class="metric-lbl" data-i18n="lbl_elevation">Elevation</div>
         </div>
       </div>
 
       <!-- Real HK Transport Section -->
       <div class="transport-box">
-        <h3 style="font-size:0.93rem; color:var(--sky); text-transform:uppercase; letter-spacing:0.04em; margin-bottom:10px;" data-i18n="detail_transport">
-          Getting There (Real HK Transport &amp; Map)
+        <h3 style="font-size:0.86rem; color:var(--pine); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:10px;" data-i18n="detail_transport">
+          Getting There
         </h3>
         <div class="transport-row">
           <strong data-i18n="lbl_mtr">MTR:</strong>

@@ -3,38 +3,35 @@
 <div class="app-shell">
   <!-- Left Sidebar: Forum Categories -->
   <aside class="sidebar">
-    <a href="/forum" class="sidebar-all-btn <%= !filters.category ? 'active' : '' %>">
-      <span data-i18n="forum_all_posts">All Discussions</span>
-      <span class="badge badge-neutral"><%= totalPosts %></span>
-    </a>
-
-    <% categoryStats.forEach((c) => { %>
-      <a
-        href="/forum?category=<%= encodeURIComponent(c.name) %>"
-        class="sidebar-card <%= filters.category === c.name ? 'active' : '' %>"
-      >
-        <div class="sidebar-card-title">
-          <span data-i18n="<%= c.name %>"><%= c.name %></span>
-          <span class="badge badge-neutral"><%= c.count %></span>
-        </div>
-        <div class="sidebar-row-link">
-          <span data-i18n="sidebar_filter_link">Click to filter</span>
-          <span>&gt;&gt;&gt;</span>
-        </div>
+    <div class="sidebar-panel">
+      <div class="sidebar-section-label">Categories</div>
+      <a href="/forum" class="sidebar-item <%= !filters.category ? 'active' : '' %>">
+        <span class="sidebar-item-name" data-i18n="forum_all_posts">All Discussions</span>
+        <span class="sidebar-count"><%= totalPosts %></span>
       </a>
-    <% }) %>
+
+      <% categoryStats.forEach((c) => { %>
+        <a
+          href="/forum?category=<%= encodeURIComponent(c.name) %>"
+          class="sidebar-item <%= filters.category === c.name ? 'active' : '' %>"
+        >
+          <span class="sidebar-item-name" data-i18n="<%= c.name %>"><%= c.name %></span>
+          <span class="sidebar-count"><%= c.count %></span>
+        </a>
+      <% }) %>
+    </div>
   </aside>
 
   <!-- Main Forum Workspace -->
   <section>
     <div class="workspace-header">
       <div>
-        <h1 class="glow-title" data-i18n="forum_title">Hiking Forum</h1>
+        <h1 class="page-title" data-i18n="forum_title">Hiking Forum</h1>
         <p class="header-subtitle" data-i18n="forum_subtitle">Discuss HK trail conditions, gear, safety alerts &amp; find hiking buddies</p>
       </div>
       <div class="header-actions">
         <a href="/api/forum" target="_blank" class="btn btn-sky">Forum JSON API</a>
-        <a href="#new-post-panel" class="btn btn-emerald" data-i18n="forum_new_post">Start a New Discussion</a>
+        <a href="#new-post-panel" class="btn btn-emerald" data-i18n="forum_new_post">New Discussion</a>
       </div>
     </div>
 

@@ -45,6 +45,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
+      sameSite: 'lax',
       maxAge: 1000 * 60 * 60 * 6
     }
   })
@@ -83,6 +84,36 @@ function parseListField(value) {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
+}
+
+function sanitizeHttpUrl(rawUrl) {
+  if (typeof rawUrl !== 'string') return '';
+  const trimmed = rawUrl.trim();
+  if (!trimmed) return '';
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.toString();
+    }
+  } catch (err) {
+    return '';
+  }
+  return '';
+}
+
+function getSafeRedirect(req, fallback) {
+  const referer = req.get('Referer');
+  if (!referer) return fallback;
+  try {
+    const parsed = new URL(referer);
+    const reqHost = req.get('host');
+    if (reqHost && parsed.host === reqHost) {
+      return `${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+  } catch (err) {
+    return fallback;
+  }
+  return fallback;
 }
 
 function buildTrailFilter(query, currentUsername) {
@@ -439,8 +470,8 @@ app.get('/login', (req, res) => {
 
 app.post('/login', async (req, res) => {
   try {
-    const username = (req.body.username || '').trim();
-    const password = req.body.password || '';
+    const username = typeof req.body.username === 'string' ? req.body.username.trim() : '';
+    const password = typeof req.body.password === 'string' ? req.body.password : '';
 
     if (!username || !password) {
       return res.status(400).render('login', {
@@ -490,12 +521,12 @@ app.get('/register', (req, res) => {
 
 app.post('/register', async (req, res) => {
   const form = {
-    username: (req.body.username || '').trim(),
-    displayName: (req.body.displayName || '').trim(),
-    email: (req.body.email || '').trim().toLowerCase()
+    username: typeof req.body.username === 'string' ? req.body.username.trim() : '',
+    displayName: typeof req.body.displayName === 'string' ? req.body.displayName.trim() : '',
+    email: typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : ''
   };
-  const password = req.body.password || '';
-  const confirmPassword = req.body.confirmPassword || '';
+  const password = typeof req.body.password === 'string' ? req.body.password : '';
+  const confirmPassword = typeof req.body.confirmPassword === 'string' ? req.body.confirmPassword : '';
 
   try {
     if (!form.username || !form.displayName || !form.email || !password) {
@@ -650,7 +681,7 @@ app.post('/trails', requireAuth, async (req, res) => {
     busRoutes: (req.body.busRoutes || '').trim(),
     returnTransport: (req.body.returnTransport || '').trim(),
     googleMapsUrl:
-      (req.body.googleMapsUrl || '').trim() ||
+      sanitizeHttpUrl(req.body.googleMapsUrl) ||
       `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${trailName} Hong Kong`)}`,
     maxParticipants: Number(req.body.maxParticipants || 12),
     gearChecklist: parseListField(req.body.gearChecklist),
@@ -736,7 +767,7 @@ app.post('/trails/:id/update', requireAuth, async (req, res) => {
       nearestMtr: (req.body.nearestMtr || '').trim(),
       busRoutes: (req.body.busRoutes || '').trim(),
       returnTransport: (req.body.returnTransport || '').trim(),
-      googleMapsUrl: (req.body.googleMapsUrl || '').trim(),
+      googleMapsUrl: sanitizeHttpUrl(req.body.googleMapsUrl),
       maxParticipants: Number(req.body.maxParticipants || 12),
       gearChecklist: parseListField(req.body.gearChecklist),
       description: (req.body.description || '').trim(),
@@ -767,6 +798,10 @@ app.post('/trails/:id/update', requireAuth, async (req, res) => {
 
 app.post('/trails/:id/join', requireAuth, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      setFlash(req, 'danger', 'Invalid trail ID.');
+      return res.redirect('/trails');
+    }
     const trail = await Trail.findById(req.params.id);
     if (!trail) {
       setFlash(req, 'danger', 'Trail not found.');
@@ -784,7 +819,7 @@ app.post('/trails/:id/join', requireAuth, async (req, res) => {
       setFlash(req, 'success', `You joined the hike "${trail.trailName}"!`);
     }
     await trail.save();
-    return res.redirect(req.get('Referer') || `/trails/${trail._id}`);
+    return res.redirect(getSafeRedirect(req, `/trails/${trail._id}`));
   } catch (err) {
     console.error('Join/leave error:', err);
     return res.redirect('/trails');
@@ -793,6 +828,10 @@ app.post('/trails/:id/join', requireAuth, async (req, res) => {
 
 app.post('/trails/:id/bookmark', requireAuth, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      setFlash(req, 'danger', 'Invalid trail ID.');
+      return res.redirect('/trails');
+    }
     const trail = await Trail.findById(req.params.id);
     if (!trail) {
       setFlash(req, 'danger', 'Trail not found.');
@@ -809,7 +848,7 @@ app.post('/trails/:id/bookmark', requireAuth, async (req, res) => {
       setFlash(req, 'success', `Saved "${trail.trailName}" to your bookmarks.`);
     }
     await trail.save();
-    return res.redirect(req.get('Referer') || `/trails/${trail._id}`);
+    return res.redirect(getSafeRedirect(req, `/trails/${trail._id}`));
   } catch (err) {
     console.error('Bookmark error:', err);
     return res.redirect('/trails');
@@ -960,7 +999,7 @@ app.post('/forum/:id/like', requireAuth, async (req, res) => {
       post.likes.push(uname);
     }
     await post.save();
-    return res.redirect(req.get('Referer') || `/forum#post-${post._id}`);
+    return res.redirect(getSafeRedirect(req, `/forum#post-${post._id}`));
   } catch (err) {
     console.error('Like error:', err);
     return res.redirect('/forum');
@@ -1051,6 +1090,9 @@ app.post('/api/trails', async (req, res) => {
     if (body.gearChecklist) {
       body.gearChecklist = parseListField(body.gearChecklist);
     }
+    if (body.googleMapsUrl !== undefined) {
+      body.googleMapsUrl = sanitizeHttpUrl(body.googleMapsUrl);
+    }
     if (!body.createdBy) {
       body.createdBy = 'api-client';
     }
@@ -1073,6 +1115,9 @@ app.put('/api/trails/:id', async (req, res) => {
     const body = { ...req.body };
     if (body.gearChecklist !== undefined) {
       body.gearChecklist = parseListField(body.gearChecklist);
+    }
+    if (body.googleMapsUrl !== undefined) {
+      body.googleMapsUrl = sanitizeHttpUrl(body.googleMapsUrl);
     }
     const updated = await Trail.findByIdAndUpdate(req.params.id, body, {
       new: true,

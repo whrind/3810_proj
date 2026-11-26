@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     themeBtn.setAttribute('title', theme === 'light' ? 'Switch to Dark Mode' : 'Switch to Light Mode');
   }
 
-  const savedTheme = localStorage.getItem('trailmate_theme') || 'dark';
+  const savedTheme = localStorage.getItem('trailmate_theme_v2') || 'light';
   root.setAttribute('data-theme', savedTheme);
   updateThemeIcon(savedTheme);
 
@@ -20,7 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     themeBtn.addEventListener('click', () => {
       const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
       root.setAttribute('data-theme', next);
-      localStorage.setItem('trailmate_theme', next);
+      localStorage.setItem('trailmate_theme_v2', next);
       updateThemeIcon(next);
     });
   }
@@ -66,7 +66,12 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!fromInput || !toInput) return;
 
       const today = new Date();
-      const fmt = (d) => d.toISOString().slice(0, 10);
+      const fmt = (d) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+      };
 
       if (preset === 'all') {
         fromInput.value = '';
