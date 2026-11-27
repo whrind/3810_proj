@@ -91,7 +91,7 @@ curl -X GET "https://3810-2da19.containers.snapdeploy.app/api/trails?q=HKMU"
 ID=$(curl -s "https://3810-2da19.containers.snapdeploy.app/api/trails?q=HKMU" | grep -o '"_id":"[^"]*"' | head -n 1 | cut -d'"' -f4) && \
 ```
 ```
-curl -X PUT "https://3810-2da19.containers.snapdeploy.app/api/trails/$ID" -H "Content-Type: application/json" -d '{"difficulty":"Moderate","durationHrs":2,"description":"Updated via CURL"}"
+curl -X PUT "https://3810-2da19.containers.snapdeploy.app/api/trails/6b08e7231977877694f3b0d2" -H "Content-Type: application/json" -d "{\"difficulty\":\"Moderate\",\"durationHrs\":2,\"description\":\"Updated via CURL\"}"
 ```
 
 #### 5. `DELETE`
