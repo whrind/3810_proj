@@ -99,3 +99,61 @@ curl -X PUT "https://3810-2da19.containers.snapdeploy.app/api/trails/$ID" -H "Co
 ```bash
 curl -X DELETE "https://3810-2da19.containers.snapdeploy.app/api/trails/$ID"
 ```
+
+### Local Demo (Bash)
+
+Start MongoDB and run `npm start`. Run the following blocks in order in the same Bash session.
+If your app uses a different local port, update `BASE`.
+
+#### 1. Login test
+
+This checks that an unauthenticated request to `/trails` receives `302` with `Location: /login`.
+
+```bash
+BASE=http://127.0.0.1:3000
+curl -sS -I "$BASE/trails"
+```
+
+#### 2. `POST`
+
+Create a temporary trail and save the ID from the response for the remaining steps.
+
+```bash
+RESPONSE=$(curl -fsS -X POST "$BASE/api/trails" \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "trailName": "Local Curl Demo",
+    "district": "Kowloon",
+    "difficulty": "Easy",
+    "distanceKm": 4.2,
+    "durationHrs": 1,
+    "meetingPoint": "Mong Kok MTR",
+    "description": "Temporary trail for the local API demo."
+  }')
+TRAIL_ID=$(node -p 'JSON.parse(require("node:fs").readFileSync(0, "utf8")).data._id' <<< "$RESPONSE")
+printf '%s\n' "$RESPONSE"
+```
+
+#### 3. `GET`
+
+```bash
+curl -fsS "$BASE/api/trails/$TRAIL_ID"
+```
+
+#### 4. `PUT`
+
+```bash
+curl -fsS -X PUT "$BASE/api/trails/$TRAIL_ID" \
+  -H 'Content-Type: application/json' \
+  -d '{"difficulty":"Moderate","durationHrs":2}'
+curl -fsS "$BASE/api/trails/$TRAIL_ID"
+```
+
+#### 5. `DELETE`
+
+Delete the temporary trail, then confirm a second lookup returns `404`.
+
+```bash
+curl -fsS -X DELETE "$BASE/api/trails/${TRAIL_ID:?Run the POST step first}"
+curl -sS -i "$BASE/api/trails/$TRAIL_ID"
+```
