@@ -68,38 +68,34 @@ curl -X PUT "http://localhost:3000/api/trails/<TRAIL_ID>" \
 curl -X DELETE "http://localhost:3000/api/trails/<TRAIL_ID>"
 curl -X GET "http://localhost:3000/api/forum?dateFrom=2026-11-20&dateTo=2026-11-30"
 ```
-### CURL 测试命令（Cloud Demo）
-
-#### 1.`/trails``/login`
-
+#### 1. Login test
 ```bash
 curl -I https://3810-2da19.containers.snapdeploy.app/trails
 ```
 
-#### 2.`GET /api/stats`
+#### 2. `POST`
 
 ```bash
-curl -X GET https://3810-2da19.containers.snapdeploy.app/api/stats
+curl -X POST https://3810-2da19.containers.snapdeploy.app/api/trails -H "Content-Type: application/json" -d '{"trailName":"HKMU","district":"Kowloon","difficulty":"Easy","distanceKm":4.2,"durationHours":1,"meetingPoint":"Mong Kok MTR","description":"Created via CURL"}'
 ```
 
-#### 3.`PUT`
+#### 3. `GET`
 
 ```bash
-curl -X PUT https://3810-2da19.containers.snapdeploy.app/api/trails/6b08d4f01977877694f3afae \
-  -H "Content-Type: application/json" \
-  -d '{"trailName":"CURL Updated Trail","difficulty":"Easy"}'
+curl -X GET "https://3810-2da19.containers.snapdeploy.app/api/trails?q=HKMU"
 ```
 
-#### 4.`DELETE`
+#### 4. `PUT`
 
 ```bash
-curl -X DELETE https://3810-2da19.containers.snapdeploy.app/api/trails/6b08d4f01977877694f3afae
+ID=$(curl -s "https://3810-2da19.containers.snapdeploy.app/api/trails?q=HKMU" | grep -o '"_id":"[^"]*"' | head -n 1 | cut -d'"' -f4) && \
+```
+```
+curl -X PUT "https://3810-2da19.containers.snapdeploy.app/api/trails/$ID" -H "Content-Type: application/json" -d '{"difficulty":"Moderate","durationHours":2,"description":"Updated via CURL"}'
 ```
 
-#### 5.`POST`
+#### 5. `DELETE`
 
 ```bash
-curl -X POST https://3810-2da19.containers.snapdeploy.app/api/trails \
-  -H "Content-Type: application/json" \
-  -d '{"trailName":"API Demo Trail","district":"Hong Kong Island","difficulty":"Easy","distanceKm":4.2,"durationHours":2,"meetingPoint":"Admiralty MTR","description":"Created via CURL"}'
+curl -X DELETE "https://3810-2da19.containers.snapdeploy.app/api/trails/$ID"
 ```
