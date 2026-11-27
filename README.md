@@ -76,7 +76,7 @@ curl -I https://3810-2da19.containers.snapdeploy.app/trails
 #### 2. `POST`
 
 ```bash
-curl -X POST https://3810-2da19.containers.snapdeploy.app/api/trails -H "Content-Type: application/json" -d '{"trailName":"HKMU","district":"Kowloon","difficulty":"Easy","distanceKm":4.2,"durationHours":1,"meetingPoint":"Mong Kok MTR","description":"Created via CURL"}'
+curl -X POST https://3810-2da19.containers.snapdeploy.app/api/trails -H "Content-Type: application/json" -d "{\"trailName\":\"HKMU\",\"district\":\"Kowloon\",\"difficulty\":\"Easy\",\"distanceKm\":4.2,\"durationHrs\":1,\"meetingPoint\":\"Mong Kok MTR\",\"description\":\"Created via CURL\"}"
 ```
 
 #### 3. `GET`
