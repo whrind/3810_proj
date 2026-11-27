@@ -70,36 +70,36 @@ curl -X GET "http://localhost:3000/api/forum?dateFrom=2026-11-20&dateTo=2026-11-
 ```
 ### CURL 测试命令（Cloud Demo）
 
-#### 1. 验证未登录直接访问 `/trails` 会被 302 重定向到 `/login`
+#### 1.`/trails``/login`
 
 ```bash
-curl -I [https://3810-2da19.containers.snapdeploy.app/trails](https://3810-2da19.containers.snapdeploy.app/trails)
+curl -I https://3810-2da19.containers.snapdeploy.app/trails
 ```
 
-#### 2. 验证免认证 `GET /api/stats`（聚合统计亮点接口）
+#### 2.`GET /api/stats`
 
 ```bash
-curl -X GET [https://3810-2da19.containers.snapdeploy.app/api/stats](https://3810-2da19.containers.snapdeploy.app/api/stats)
+curl -X GET https://3810-2da19.containers.snapdeploy.app/api/stats
 ```
 
-#### 3. 验证免认证 `PUT`（更新指定测试路线）
+#### 3.`PUT`
 
 ```bash
-curl -X PUT [https://3810-2da19.containers.snapdeploy.app/api/trails/6b08d4f01977877694f3afae](https://3810-2da19.containers.snapdeploy.app/api/trails/6b08d4f01977877694f3afae) \
+curl -X PUT https://3810-2da19.containers.snapdeploy.app/api/trails/6b08d4f01977877694f3afae \
   -H "Content-Type: application/json" \
   -d '{"trailName":"CURL Updated Trail","difficulty":"Easy"}'
 ```
 
-#### 4. 验证免认证 `DELETE`（删除指定测试路线）
+#### 4.`DELETE`
 
 ```bash
-curl -X DELETE [https://3810-2da19.containers.snapdeploy.app/api/trails/6b08d4f01977877694f3afae](https://3810-2da19.containers.snapdeploy.app/api/trails/6b08d4f01977877694f3afae)
+curl -X DELETE https://3810-2da19.containers.snapdeploy.app/api/trails/6b08d4f01977877694f3afae
 ```
 
-#### 5. 验证免认证 `POST`（新建一条测试路线）
+#### 5.`POST`
 
 ```bash
-curl -X POST [https://3810-2da19.containers.snapdeploy.app/api/trails](https://3810-2da19.containers.snapdeploy.app/api/trails) \
+curl -X POST https://3810-2da19.containers.snapdeploy.app/api/trails \
   -H "Content-Type: application/json" \
   -d '{"trailName":"API Demo Trail","district":"Hong Kong Island","difficulty":"Easy","distanceKm":4.2,"durationHours":2,"meetingPoint":"Admiralty MTR","description":"Created via CURL"}'
 ```
